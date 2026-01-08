@@ -461,12 +461,10 @@ server <- function(input, output, session) {
   # Render text for number of customers
   output$tum_risk <- renderText({
     validate(
-      #need(!is.na(input$volume) && input$volume > 0, "Prostate Volume [ml] must be a valid number greater than 0."),
       need(input$psa > 0, "PSA [ng/ml] must be a valid number greater than 0."),
       need(input$age >= 30 && input$age <= 90, "Age must be between 30 and 90."),
       need( (input$volume >= 0 && input$volume <= 300) || is.na(input$volume), "Prostate Volume [ml] must be a valid number between 0 and 300 or missing.")
     )
-    #req(risk_prediction_event()) 
     
     prob_tum_val <- risk_tum(
       psa = input$psa, 
@@ -485,7 +483,6 @@ server <- function(input, output, session) {
   
   output$spcc_risk <- renderText({
     validate(
-      #need(!is.na(input$volume) && input$volume > 0, "Prostate Volume [ml] must be a valid number greater than 0."),
       need(input$psa > 0, "PSA [ng/ml] must be a valid number greater than 0."),
       need(input$age >= 30 && input$age <= 90, "Age must be between 30 and 90."),
       need((input$volume >= 0 && input$volume <= 300), "Prostate Volume [ml] must be a valid number between 0 and 300")
@@ -506,7 +503,6 @@ server <- function(input, output, session) {
   
   output$ucla_risk <- renderText({
     validate(
-      #need(!is.na(input$volume) && input$volume > 0, "Prostate Volume [ml] must be a valid number greater than 0."),
       need(input$psa > 0, "PSA [ng/ml] must be a valid number greater than 0."),
       need(input$age >= 30 && input$age <= 90, "Age must be between 30 and 90."),
       need((input$volume >= 0 && input$volume <= 300), "Prostate Volume [ml] must be a valid number between 0 and 300")
@@ -532,5 +528,5 @@ server <- function(input, output, session) {
 }
 
 # Run the application
-shinyApp(ui = ui, server = server) # Uncomment this line to run the app
+shinyApp(ui = ui, server = server) 
 
