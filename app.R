@@ -1,7 +1,8 @@
 library(shiny)
 library(dplyr)
 library(ggplot2)
-library(DT) # For the data table output
+#library(DT) # For the data table output
+library(bslib)
 
 # ----------------------------------------------------------------------
 # 1. RISK FUNCTIONS ----
@@ -224,6 +225,8 @@ risk_stanford <- function(
 # ----------------------------------------------------------------------
 
 ui <- fluidPage(
+  theme = bs_theme(version = 5, primary = "#004d40"),
+  
   tags$head(
     tags$style(HTML("
       .main-header {
@@ -238,11 +241,7 @@ ui <- fluidPage(
         padding: 15px;
         border-right: 1px solid #ddd;
       }
-      .data-table-container {
-        margin-top: 20px;
-        font-size: 1.1em;
-      }
-
+  
       /* Style for the Calculate Button */
       #calculate_button {
         width: 100%;
@@ -257,6 +256,23 @@ ui <- fluidPage(
       #calculate_button:hover {
         background-color: #00897b;
       }
+      .custom-card {
+  background-color: #ffffff;    /* Card background color */
+  border: 1px solid #004d40;    /* Teal border to match your header */
+  border-radius: 8px;           /* Rounded corners */
+  padding: 20px;                /* Space inside the box */
+  margin-top: 20px;             /* Space above the box */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+}
+
+      .custom-card-header {
+      font-weight: bold;
+      color: #004d40;
+      font-size: 1.1rem; 
+      margin-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
+      }
+}
     "))
   ),
   
@@ -268,7 +284,7 @@ ui <- fluidPage(
                  width = 4,
                  h3("Patient Characteristics"),
                  # Fixed Inputs
-                 numericInput("age", "Age", 55, min = 55.0, max = 90.0),
+                 numericInput("age", "Age", 55, min = 30.0, max = 90.0),
                  numericInput("psa", "PSA [ng/ml]", 4, min = 0.1, max = 100), 
                  numericInput("volume", "Prostate Volume [ml] (leave blank if unknown)", 40), # Default volume set
                  
@@ -308,22 +324,63 @@ ui <- fluidPage(
       width = 8,
       h3(textOutput("result_title")),
       
-      # Risk Output Table Container
-      div(class = "data-table-container",
-          dataTableOutput("risk_table_output")
-      ),
-      
-      p(em(" ")),
-      
-      p("PCRC-MRI: ",
-        a("www.uclahealth.org/departments/urology/iuo/research/prostate-cancer/risk-calculator-mri-guided-biopsy-pcrc-mri", 
-          href = "https://www.uclahealth.org/departments/urology/iuo/research/prostate-cancer/risk-calculator-mri-guided-biopsy-pcrc-mri", 
-          target = "_blank")
-      ),
-      p("SPCC: ",
-        a("www.med.stanford.edu/ucil/nomogram.html", 
-          href = "https://www.med.stanford.edu/ucil/nomogram.html", 
-          target = "_blank")
+      #layout_columns(
+        card(
+          #class = "border-info",
+          #class = "bg-info text-white", # Applies the "secondary" theme color
+          card_header("TUM-RC", class = "fw-bold"),
+          card_body(
+            div(
+              style = "font-size: 2em; font-weight: bold;",
+              textOutput("tum_risk")
+            )
+          ),
+          markdown("
+          **Development cohort attributes:**  <br>
+          67% csPCa, 1228 biopsies, 74% PI-RADS 4,5, Single institution in Munich, Germany <br>
+          **Includes:** 11.4% PI-RADS 2 <br>
+          **Excludes:** PI-RADS 1, prior PCa diagnosis, PSA > 100 ng/mL <br>
+          **Not in tool:** family history, race/ethnicity"
+                   #Online risk tool: Not available, only code for local
+                   )
+        ),
+        card(
+          #class = "bg-secondary text-white", # Applies the "secondary" theme color
+          card_header("SPCC", class = "fw-bold"),
+          card_body(
+            div(
+              style = "font-size: 2em; font-weight: bold;",
+              textOutput("spcc_risk")
+            ),
+            markdown("
+          **Development cohort attributes:** <br>
+            54% csPCa, 1922 biopsies, 75%  PI-RADS 4,5, Multiple institutions in Stanford, Yale, and Alabama, USA <br>
+         **Includes:** active surveillance patients with prior prostate cancer diagnosis <br>
+         **Excludes:** PI-RADS 1 or 2 <br>
+         **Not in tool:** DRE, family history <br>
+         **Online risk tool:**  https://www.med.stanford.edu/ucil/nomogram.html 
+                     "),
+          )
+        ),
+        
+        card(
+          #class = "bg-secondary text-white", # Applies the "secondary" theme color
+          card_header("PCRC-MRI", class = "fw-bold"),
+          card_body(
+            div(
+              style = "font-size: 2em; font-weight: bold;",
+              textOutput("ucla_risk")
+            )
+          ),
+          markdown("
+          **Development cohort attributes:**  <br>
+            40% csPCa, 2354 biopsies, 52%  PI-RADS 4,5, Multiple institutions Cornell, NY and Los Angeles, CA, USA <br>
+         **Includes:** 19% PI-RADS 1, 2<br>
+         **Excludes:** prior PCa diagnosis<br>
+         **Not in tool:** family history <br>
+         **Online risk tool:**  https://www.uclahealth.org/departments/urology/iuo/research/prostate-cancer/risk-calculator-mri-guided-biopsy-pcrc-mri 
+                     ")
+        #)
       )
     )
   )
@@ -343,30 +400,30 @@ server <- function(input, output, session) {
     validate(
       #need(!is.na(input$volume) && input$volume > 0, "Prostate Volume [ml] must be a valid number greater than 0."),
       need(input$psa > 0, "PSA [ng/ml] must be a valid number greater than 0."),
-      need(input$age >= 55 && input$age <= 90, "Age must be between 55 and 90."),
-      need(input$volume >= 0 || is.na(input$volume), "Prostate Volume [ml] must be a valid number greater than 0 or missing.")
+      need(input$age >= 30 && input$age <= 90, "Age must be between 55 and 90."),
+      need( (input$volume >= 0 && input$volume <= 300) || is.na(input$volume), "Prostate Volume [ml] must be a valid number between 0 and 300 or missing.")
     )
     
     # --- Calculation ---
     tryCatch({
       # TUM calculation
       prob_tum_val <- risk_tum(
-        psa = input$psa, 
-        volume = input$volume, 
-        age = input$age, 
-        pirads = input$pirads, 
-        dre = input$dre, 
+        psa = input$psa,
+        volume = input$volume,
+        age = input$age,
+        pirads = input$pirads,
+        dre = input$dre,
         priorbiopsy = input$priornegbiopsy
       )
-      
-      # UCLA calculation 
+
+      # UCLA calculation
       prob_ucla_val <- risk_ucla(
-        psa = input$psa, 
-        volume = input$volume, 
-        age = input$age, 
-        pirads = input$pirads, 
-        dre = input$dre, 
-        race = "Caucasian", 
+        psa = input$psa,
+        volume = input$volume,
+        age = input$age,
+        pirads = input$pirads,
+        dre = input$dre,
+        race = "Caucasian",
         priorbiopsy = input$priornegbiopsy
       )
       prob_stanf_val <- risk_stanford(
@@ -377,6 +434,7 @@ server <- function(input, output, session) {
         race = "White",
         history = ifelse(input$priornegbiopsy == "yes", "Prior Negative Biopsy", "Biopsy Naive")
       )
+
       # Create the data frame for output
       prob_df = data.frame(
         Risk_Category = c("TUM-RC", "PCRC-MRI", "SPCC"),
@@ -384,10 +442,10 @@ server <- function(input, output, session) {
         stringsAsFactors = FALSE
       )
       return(prob_df)
-      
+
     }, error = function(e) {
       # Print error for debugging and return a useful message
-      print(paste("Error in risk calculation:", e$message)) 
+      print(paste("Error in risk calculation:", e$message))
       showNotification(paste("Calculation Error:", e$message), type = "error")
       return(NULL) # Return NULL on error
     })
@@ -396,40 +454,83 @@ server <- function(input, output, session) {
   # 2. Output Rendering (Title)
   output$result_title <- renderText({
     # Use the event reactive to trigger the title update
-    req(risk_prediction_event()) 
-    "Risk of clinically significant prostate cancer (ISUP >=2)"
+    #req(risk_prediction_event()) 
+    "Risk of clinically significant prostate cancer (ISUP ≥ 2)"
   })
   
-  # 3. Output Table (Displays the risks)
-  output$risk_table_output <- renderDataTable({
-    prob_data <- risk_prediction_event() # Triggered by the action button
+  # Render text for number of customers
+  output$tum_risk <- renderText({
+    validate(
+      #need(!is.na(input$volume) && input$volume > 0, "Prostate Volume [ml] must be a valid number greater than 0."),
+      need(input$psa > 0, "PSA [ng/ml] must be a valid number greater than 0."),
+      need(input$age >= 30 && input$age <= 90, "Age must be between 30 and 90."),
+      need( (input$volume >= 0 && input$volume <= 300) || is.na(input$volume), "Prostate Volume [ml] must be a valid number between 0 and 300 or missing.")
+    )
+    #req(risk_prediction_event()) 
     
-    if (is.null(prob_data)) {
-      return(NULL)
-    }
+    prob_tum_val <- risk_tum(
+      psa = input$psa, 
+      volume = input$volume, 
+      age = input$age, 
+      pirads = input$pirads, 
+      dre = input$dre, 
+      priorbiopsy = input$priornegbiopsy
+    )
     
-    # Format probabilities as percentages
-    prob_data$Probability_Pct <- ifelse(!is.na(prob_data$Probability), sprintf("%.1f%%", prob_data$Probability * 100), NA)
+    out <- ifelse(!is.na(prob_tum_val), sprintf("%.1f%%", prob_tum_val * 100), NA)
+    HTML(paste0( "Your risk is ", out ))
+    # out |>
+    #   format(big.mark = ",")
+  })
+  
+  output$spcc_risk <- renderText({
+    validate(
+      #need(!is.na(input$volume) && input$volume > 0, "Prostate Volume [ml] must be a valid number greater than 0."),
+      need(input$psa > 0, "PSA [ng/ml] must be a valid number greater than 0."),
+      need(input$age >= 30 && input$age <= 90, "Age must be between 30 and 90."),
+      need((input$volume >= 0 && input$volume <= 300), "Prostate Volume [ml] must be a valid number between 0 and 300")
+    )
     
-    # Select and rename columns for display
-    display_data <- prob_data %>%
-      select(Risk_Category, Probability_Pct) %>%
-      #rename(" " = Risk_Category, "" = Probability_Pct)
-      rename("Risk Model" = Risk_Category, "Probability" = Probability_Pct)
+    prob_stanf_val <- risk_stanford(
+      psa = input$psa,
+      volume = input$volume,
+      age = input$age,
+      pirads = input$pirads,
+      race = "White",
+      history = ifelse(input$priornegbiopsy == "yes", "Prior Negative Biopsy", "Biopsy Naive")
+    )
     
-    # Render the data table with nice formatting
-    datatable(display_data, 
-              options = list(dom = 't', paging = FALSE, ordering = FALSE,
-                             headerCallback = JS("function(thead, data, start, end, display){ $(thead).remove(); }"),
-                             columnDefs = list(
-                               list(className = 'dt-right', targets = c(1))
-                             )
-              ), 
-              rownames = FALSE,
-              caption = " ") 
+    out <- ifelse(!is.na(prob_stanf_val), sprintf("%.1f%%", prob_stanf_val * 100), NA)
+    HTML(paste0( "Your risk is ", out ))
+  })
+  
+  output$ucla_risk <- renderText({
+    validate(
+      #need(!is.na(input$volume) && input$volume > 0, "Prostate Volume [ml] must be a valid number greater than 0."),
+      need(input$psa > 0, "PSA [ng/ml] must be a valid number greater than 0."),
+      need(input$age >= 30 && input$age <= 90, "Age must be between 30 and 90."),
+      need((input$volume >= 0 && input$volume <= 300), "Prostate Volume [ml] must be a valid number between 0 and 300")
+    )
+    
+    prob_ucla_val <- risk_ucla(
+      psa = input$psa, 
+      volume = input$volume, 
+      age = input$age, 
+      pirads = input$pirads, 
+      dre = input$dre, 
+      race = "Caucasian", 
+      priorbiopsy = input$priornegbiopsy
+    )
+    out <- ifelse(!is.na(prob_ucla_val), sprintf("%.1f%%", prob_ucla_val * 100), NA)
+    
+    HTML(paste0(
+      "Your risk is ",
+       out
+    ))
   })
   
 }
 
 # Run the application
 shinyApp(ui = ui, server = server) # Uncomment this line to run the app
+
