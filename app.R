@@ -1,7 +1,7 @@
 library(shiny)
-library(dplyr)
-library(ggplot2)
-#library(DT) # For the data table output
+#library(dplyr)
+#library(ggplot2)
+##library(DT) # For the data table output
 library(bslib)
 
 # ----------------------------------------------------------------------
@@ -323,64 +323,61 @@ ui <- fluidPage(
     mainPanel(
       width = 8,
       h3(textOutput("result_title")),
+      p(" "),
       
-      #layout_columns(
-        card(
-          #class = "border-info",
-          #class = "bg-info text-white", # Applies the "secondary" theme color
-          card_header("TUM-RC", class = "fw-bold"),
-          card_body(
-            div(
-              style = "font-size: 2em; font-weight: bold;",
-              textOutput("tum_risk")
-            )
-          ),
-          markdown("
-          **Development cohort attributes:**  <br>
-          67% csPCa, 1228 biopsies, 74% PI-RADS 4,5, Single institution in Munich, Germany <br>
+      
+      card(
+        #class = "border-info",
+        #class = "bg-info text-white", # Applies the "secondary" theme color
+        #card_header("TUM-RC", class = "fw-bold"),
+        card_body(
+          div(
+            style = "font-size: 1.1em; font-weight: bold;",
+            textOutput("tum_risk")
+          )
+        ),
+        markdown("
+          **Description:** 67% csPCa, 1228 biopsies, 74% PI-RADS 4,5, Single institution in Munich, Germany <br>
           **Includes:** 11.4% PI-RADS 2 <br>
           **Excludes:** PI-RADS 1, prior PCa diagnosis, PSA > 100 ng/mL <br>
           **Not in tool:** family history, race/ethnicity"
-                   #Online risk tool: Not available, only code for local
-                   )
-        ),
-        card(
-          #class = "bg-secondary text-white", # Applies the "secondary" theme color
-          card_header("SPCC", class = "fw-bold"),
-          card_body(
-            div(
-              style = "font-size: 2em; font-weight: bold;",
-              textOutput("spcc_risk")
-            ),
-            markdown("
-          **Development cohort attributes:** <br>
-            54% csPCa, 1922 biopsies, 75%  PI-RADS 4,5, Multiple institutions in Stanford, Yale, and Alabama, USA <br>
+                 #Online risk tool: Not available, only code for local
+        )
+      ),
+      card(
+        #class = "bg-secondary text-white", # Applies the "secondary" theme color
+        #card_header("SPCC", class = "fw-bold"),
+        card_body(
+          div(
+            style = "font-size: 1.1em; font-weight: bold;",
+            textOutput("spcc_risk")
+          ),
+          markdown("
+         **Description:** 54% csPCa, 1922 biopsies, 75%  PI-RADS 4,5, Multiple institutions in Stanford, Yale, and Alabama, USA <br>
          **Includes:** active surveillance patients with prior prostate cancer diagnosis <br>
          **Excludes:** PI-RADS 1 or 2 <br>
          **Not in tool:** DRE, family history <br>
          **Online risk tool:**  https://www.med.stanford.edu/ucil/nomogram.html 
                      "),
+        )
+      ),
+      
+      card(
+        #class = "bg-secondary text-white", # Applies the "secondary" theme color
+        #card_header("PCRC-MRI", class = "fw-bold"),
+        card_body(
+          div(
+            style = "font-size: 1.1em; font-weight: bold;",
+            textOutput("ucla_risk")
           )
         ),
-        
-        card(
-          #class = "bg-secondary text-white", # Applies the "secondary" theme color
-          card_header("PCRC-MRI", class = "fw-bold"),
-          card_body(
-            div(
-              style = "font-size: 2em; font-weight: bold;",
-              textOutput("ucla_risk")
-            )
-          ),
-          markdown("
-          **Development cohort attributes:**  <br>
-            40% csPCa, 2354 biopsies, 52%  PI-RADS 4,5, Multiple institutions Cornell, NY and Los Angeles, CA, USA <br>
+        markdown("
+         **Description:** 40% csPCa, 2354 biopsies, 52%  PI-RADS 4,5, Multiple institutions Cornell, NY and Los Angeles, CA, USA <br>
          **Includes:** 19% PI-RADS 1, 2<br>
          **Excludes:** prior PCa diagnosis<br>
          **Not in tool:** family history <br>
          **Online risk tool:**  https://www.uclahealth.org/departments/urology/iuo/research/prostate-cancer/risk-calculator-mri-guided-biopsy-pcrc-mri 
-                     ")
-        #)
+        ")
       )
     )
   )
@@ -415,7 +412,7 @@ server <- function(input, output, session) {
         dre = input$dre,
         priorbiopsy = input$priornegbiopsy
       )
-
+      
       # UCLA calculation
       prob_ucla_val <- risk_ucla(
         psa = input$psa,
@@ -434,7 +431,7 @@ server <- function(input, output, session) {
         race = "White",
         history = ifelse(input$priornegbiopsy == "yes", "Prior Negative Biopsy", "Biopsy Naive")
       )
-
+      
       # Create the data frame for output
       prob_df = data.frame(
         Risk_Category = c("TUM-RC", "PCRC-MRI", "SPCC"),
@@ -442,7 +439,7 @@ server <- function(input, output, session) {
         stringsAsFactors = FALSE
       )
       return(prob_df)
-
+      
     }, error = function(e) {
       # Print error for debugging and return a useful message
       print(paste("Error in risk calculation:", e$message))
@@ -455,15 +452,15 @@ server <- function(input, output, session) {
   output$result_title <- renderText({
     # Use the event reactive to trigger the title update
     #req(risk_prediction_event()) 
-    "Risk of clinically significant prostate cancer (ISUP ≥ 2)"
+    "Risk Calculators for ISUP ≥ 2 prostate cancer"
   })
   
   # Render text for number of customers
   output$tum_risk <- renderText({
     validate(
-      need(input$psa > 0, "PSA [ng/ml] must be a valid number greater than 0."),
+      need(input$psa > 0 && input$psa <= 100, "PSA [ng/ml] must be a valid number between 0 and 100."),
       need(input$age >= 30 && input$age <= 90, "Age must be between 30 and 90."),
-      need( (input$volume >= 0 && input$volume <= 300) || is.na(input$volume), "Prostate Volume [ml] must be a valid number between 0 and 300 or missing.")
+      need((input$volume >= 0 && input$volume <= 300) || is.na(input$volume), "Prostate Volume [ml] must be a valid number between 0 and 300 or missing.")
     )
     
     prob_tum_val <- risk_tum(
@@ -476,14 +473,14 @@ server <- function(input, output, session) {
     )
     
     out <- ifelse(!is.na(prob_tum_val), sprintf("%.1f%%", prob_tum_val * 100), NA)
-    HTML(paste0( "Your risk is ", out ))
+    HTML(paste0( "TUM Risk Calculator risk is ", out ))
     # out |>
     #   format(big.mark = ",")
   })
   
   output$spcc_risk <- renderText({
     validate(
-      need(input$psa > 0, "PSA [ng/ml] must be a valid number greater than 0."),
+      need(input$psa > 0 && input$psa <= 100, "PSA [ng/ml] must be a valid number between 0 and 100."),
       need(input$age >= 30 && input$age <= 90, "Age must be between 30 and 90."),
       need((input$volume >= 0 && input$volume <= 300), "Prostate Volume [ml] must be a valid number between 0 and 300")
     )
@@ -498,12 +495,12 @@ server <- function(input, output, session) {
     )
     
     out <- ifelse(!is.na(prob_stanf_val), sprintf("%.1f%%", prob_stanf_val * 100), NA)
-    HTML(paste0( "Your risk is ", out ))
+    HTML(paste0( "Stanford Prostate Cancer Calculator risk is ", out ))
   })
   
   output$ucla_risk <- renderText({
     validate(
-      need(input$psa > 0, "PSA [ng/ml] must be a valid number greater than 0."),
+      need(input$psa > 0 && input$psa <= 100, "PSA [ng/ml] must be a valid number between 0 and 100."),
       need(input$age >= 30 && input$age <= 90, "Age must be between 30 and 90."),
       need((input$volume >= 0 && input$volume <= 300), "Prostate Volume [ml] must be a valid number between 0 and 300")
     )
@@ -520,9 +517,7 @@ server <- function(input, output, session) {
     out <- ifelse(!is.na(prob_ucla_val), sprintf("%.1f%%", prob_ucla_val * 100), NA)
     
     HTML(paste0(
-      "Your risk is ",
-       out
-    ))
+      "Prostate Cancer Risk Calculator - MRI risk is ",  out))
   })
   
 }
