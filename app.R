@@ -1,7 +1,4 @@
 library(shiny)
-#library(dplyr)
-#library(ggplot2)
-##library(DT) # For the data table output
 library(bslib)
 
 # ----------------------------------------------------------------------
@@ -9,7 +6,7 @@ library(bslib)
 # ----------------------------------------------------------------------
 
 # Risk function for TUM-RC  risk calculator
-# Outputs risk (0 to 1) of any-grade significant cancer ( ISUP >= 2)
+# Outputs risk of clinically significant prostate cancer (ISUP >= 2)
 
 coef <- matrix(c(-2.07771, 0.04981, 0.48253, 1.28603, -1.20072, 0.88053, -1.11740,
                  -1.78074, 0.05017, 0.41618, 1.28363, -1.25050, 0.91657, NA,
@@ -23,12 +20,6 @@ coef <- matrix(c(-2.07771, 0.04981, 0.48253, 1.28603, -1.20072, 0.88053, -1.1174
 colnames(coef) <- c("(Intercept)","age","log2_psa","pirads", "log2_vol", "dre","priorbiopsy")
 
 # age, psa and pirads are mandatory
-# age= 55
-# psa= 4
-# volume = NA
-# dre = "abnormal"
-# pirads = "3"
-# priorbiopsy = "yes"
 risk_tum <- function(
     age,           # Numeric: Patient's age at biopsy.
     psa,           # Numeric: Prostate-Specific Antigen level.
@@ -257,22 +248,13 @@ ui <- fluidPage(
         background-color: #00897b;
       }
       .custom-card {
-  background-color: #ffffff;    /* Card background color */
-  border: 1px solid #004d40;    /* Teal border to match your header */
-  border-radius: 8px;           /* Rounded corners */
-  padding: 20px;                /* Space inside the box */
-  margin-top: 20px;             /* Space above the box */
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Subtle shadow for depth */
-}
-
-      .custom-card-header {
-      font-weight: bold;
-      color: #004d40;
-      font-size: 1.1rem; 
-      margin-bottom: 10px;
-      border-bottom: 1px solid #e0e0e0;
+        background-color: #ffffff;    /* Card background color */
+        border: 1px solid #004d40;    /* Teal border to match your header */
+        border-radius: 8px;           /* Rounded corners */
+        padding: 20px;                /* Space inside the box */
+        margin-top: 20px;             /* Space above the box */
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); /* Subtle shadow for depth */
       }
-}
     "))
   ),
   
@@ -389,73 +371,12 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  # 1. Event Reactive Prediction Calculation (Runs ONLY on button click)
-  risk_prediction_event <- eventReactive(input$calculate_button, {
-    
-    # --- Input Validation ---
-    # Ensure all required inputs are present. Volume must be a number > 0.
-    validate(
-      #need(!is.na(input$volume) && input$volume > 0, "Prostate Volume [ml] must be a valid number greater than 0."),
-      need(input$psa > 0, "PSA [ng/ml] must be a valid number greater than 0."),
-      need(input$age >= 30 && input$age <= 90, "Age must be between 55 and 90."),
-      need( (input$volume >= 0 && input$volume <= 300) || is.na(input$volume), "Prostate Volume [ml] must be a valid number between 0 and 300 or missing.")
-    )
-    
-    # --- Calculation ---
-    tryCatch({
-      # TUM calculation
-      prob_tum_val <- risk_tum(
-        psa = input$psa,
-        volume = input$volume,
-        age = input$age,
-        pirads = input$pirads,
-        dre = input$dre,
-        priorbiopsy = input$priornegbiopsy
-      )
-      
-      # UCLA calculation
-      prob_ucla_val <- risk_ucla(
-        psa = input$psa,
-        volume = input$volume,
-        age = input$age,
-        pirads = input$pirads,
-        dre = input$dre,
-        race = "Caucasian",
-        priorbiopsy = input$priornegbiopsy
-      )
-      prob_stanf_val <- risk_stanford(
-        psa = input$psa,
-        volume = input$volume,
-        age = input$age,
-        pirads = input$pirads,
-        race = "White",
-        history = ifelse(input$priornegbiopsy == "yes", "Prior Negative Biopsy", "Biopsy Naive")
-      )
-      
-      # Create the data frame for output
-      prob_df = data.frame(
-        Risk_Category = c("TUM-RC", "PCRC-MRI", "SPCC"),
-        Probability = c(prob_tum_val, prob_ucla_val, prob_stanf_val),
-        stringsAsFactors = FALSE
-      )
-      return(prob_df)
-      
-    }, error = function(e) {
-      # Print error for debugging and return a useful message
-      print(paste("Error in risk calculation:", e$message))
-      showNotification(paste("Calculation Error:", e$message), type = "error")
-      return(NULL) # Return NULL on error
-    })
-  })
-  
-  # 2. Output Rendering (Title)
+  # Output Rendering (Title)
   output$result_title <- renderText({
-    # Use the event reactive to trigger the title update
-    #req(risk_prediction_event()) 
     "Risk Calculators for ISUP ≥ 2 prostate cancer"
   })
   
-  # Render text for number of customers
+  # Render text for TUM-RC
   output$tum_risk <- renderText({
     validate(
       need(input$psa > 0 && input$psa <= 100, "PSA [ng/ml] must be a valid number between 0 and 100."),
@@ -478,6 +399,7 @@ server <- function(input, output, session) {
     #   format(big.mark = ",")
   })
   
+  # Render text for SPCC
   output$spcc_risk <- renderText({
     validate(
       need(input$psa > 0 && input$psa <= 100, "PSA [ng/ml] must be a valid number between 0 and 100."),
@@ -497,7 +419,7 @@ server <- function(input, output, session) {
     out <- ifelse(!is.na(prob_stanf_val), sprintf("%.1f%%", prob_stanf_val * 100), NA)
     HTML(paste0( "Stanford Prostate Cancer Calculator risk is ", out ))
   })
-  
+  # Render text for PCRC-MRI
   output$ucla_risk <- renderText({
     validate(
       need(input$psa > 0 && input$psa <= 100, "PSA [ng/ml] must be a valid number between 0 and 100."),
