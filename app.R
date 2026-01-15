@@ -171,7 +171,6 @@ risk_stanford <- function(
   
   # PIRADS Score
   pirads_coeff_map <- c(
-    "2" = 0,
     "3" = 0,
     "4" = 1.051,
     "5" = 1.717
@@ -280,7 +279,7 @@ ui <- fluidPage(
                  ),
                  radioButtons(
                    "priornegbiopsy",
-                   "Prior negative biopsy:",
+                   "Prior negative biopsy",
                    choices = c("No" = "no", "Yes" = "yes", "Unknown" = NA),
                    selected = "no",
                    inline = TRUE
@@ -317,7 +316,7 @@ ui <- fluidPage(
         markdown("
           **Description:** 67% csPCa, 1228 biopsies, 74% PI-RADS 4,5, Single institution in Munich, Germany <br>
           **Includes:** 11.4% PI-RADS 2 <br>
-          **Excludes:** PI-RADS 1, prior PCa diagnosis, PSA > 100 ng/mL <br>
+          **Excludes:** PI-RADS 1, prior PCa diagnosis, PSA ≥ 100 ng/mL <br>
           **Not in tool:** family history, race/ethnicity"
                  #Online risk tool: Not available, only code for local
         )
@@ -400,8 +399,9 @@ server <- function(input, output, session) {
     validate(
       need(input$psa > 0 && input$psa <= 100, "PSA [ng/ml] must be a valid number between 0 and 100."),
       need(input$age >= 30 && input$age <= 90, "Age must be between 30 and 90."),
-      need((input$volume >= 0 && input$volume <= 300), "Prostate Volume [ml] must be a valid number between 0 and 300"),
-      need(input$pirads %in% c("3", "4", "5"), "PI-RADS must be greater than 3.")
+      need((input$volume >= 0 && input$volume <= 300), "Prostate Volume [ml] must be a valid number between 0 and 300."),
+      need(input$pirads %in% c("3", "4", "5"), "PI-RADS must be ≥ 3."),
+      need(input$priornegbiopsy %in% c("yes", "no"), "Prior negative biopsy can not be unknown.")
     )
     
     prob_stanf_val <- risk_stanford(
@@ -422,7 +422,7 @@ server <- function(input, output, session) {
     validate(
       need(input$psa > 0 && input$psa <= 100, "PSA [ng/ml] must be a valid number between 0 and 100."),
       need(input$age >= 30 && input$age <= 90, "Age must be between 30 and 90."),
-      need((input$volume >= 0 && input$volume <= 300), "Prostate Volume [ml] must be a valid number between 0 and 300")
+      need((input$volume >= 0 && input$volume <= 300), "Prostate Volume [ml] must be a valid number between 0 and 300.")
     )
     
     prob_ucla_val <- risk_ucla(
