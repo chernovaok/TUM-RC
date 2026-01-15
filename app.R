@@ -1,5 +1,6 @@
 library(shiny)
 library(bslib)
+library(dplyr)
 
 # ----------------------------------------------------------------------
 # 1. RISK FUNCTIONS ----
@@ -266,35 +267,30 @@ ui <- fluidPage(
                  width = 4,
                  h3("Patient Characteristics"),
                  # Fixed Inputs
-                 numericInput("age", "Age", 55, min = 30.0, max = 90.0),
-                 numericInput("psa", "PSA [ng/ml]", 4, min = 0.1, max = 100), 
-                 numericInput("volume", "Prostate Volume [ml] (leave blank if unknown)", 40), # Default volume set
+                 numericInput("age", "Age", NA, min = 30.0, max = 90.0),
+                 numericInput("psa", "PSA [ng/ml]", NA, min = 0.1, max = 100), 
+                 numericInput("volume", "Prostate Volume [ml] (leave blank if unknown)", NA), 
                  
                  radioButtons(
                    "pirads",
-                   "PIRADS",
+                   "PI-RADS",
                    choices = c("2" = 2,"3" = 3, "4" = 4, "5" = 5),
-                   selected = 3,
+                   selected = NA,
                    inline = TRUE
                  ),
-                 
-                 div(
-                   #style = "margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd;",
-                   
-                   radioButtons(
-                     "priornegbiopsy",
-                     "Prior negative biopsy:",
-                     choices = c("No" = "no", "Yes" = "yes", "Unknown" = NA),
-                     selected = "no",
-                     inline = TRUE
-                   ),
-                   radioButtons(
-                     "dre",
-                     "Digital rectal examination",
-                     choices = c("Abnormal" = "abnormal", "Normal" = "normal", "Unknown" = NA),
-                     selected = "abnormal",
-                     inline = TRUE
-                   )
+                 radioButtons(
+                   "priornegbiopsy",
+                   "Prior negative biopsy:",
+                   choices = c("No" = "no", "Yes" = "yes", "Unknown" = NA),
+                   selected = "no",
+                   inline = TRUE
+                 ),
+                 radioButtons(
+                   "dre",
+                   "Digital rectal examination",
+                   choices = c("Abnormal" = "abnormal", "Normal" = "normal", "Unknown" = NA),
+                   selected = "normal",
+                   inline = TRUE
                  ),
                  
                  # --- Action Button for Calculation ---
@@ -397,14 +393,15 @@ server <- function(input, output, session) {
     HTML(paste0( "TUM Risk Calculator risk is ", out ))
     # out |>
     #   format(big.mark = ",")
-  })
+  }) %>% bindEvent(input$calculate_button)
   
   # Render text for SPCC
   output$spcc_risk <- renderText({
     validate(
       need(input$psa > 0 && input$psa <= 100, "PSA [ng/ml] must be a valid number between 0 and 100."),
       need(input$age >= 30 && input$age <= 90, "Age must be between 30 and 90."),
-      need((input$volume >= 0 && input$volume <= 300), "Prostate Volume [ml] must be a valid number between 0 and 300")
+      need((input$volume >= 0 && input$volume <= 300), "Prostate Volume [ml] must be a valid number between 0 and 300"),
+      need(input$pirads %in% c("3", "4", "5"), "PI-RADS must be greater than 3.")
     )
     
     prob_stanf_val <- risk_stanford(
@@ -418,7 +415,8 @@ server <- function(input, output, session) {
     
     out <- ifelse(!is.na(prob_stanf_val), sprintf("%.1f%%", prob_stanf_val * 100), NA)
     HTML(paste0( "Stanford Prostate Cancer Calculator risk is ", out ))
-  })
+  }) %>% bindEvent(input$calculate_button)
+  
   # Render text for PCRC-MRI
   output$ucla_risk <- renderText({
     validate(
@@ -440,7 +438,7 @@ server <- function(input, output, session) {
     
     HTML(paste0(
       "Prostate Cancer Risk Calculator - MRI risk is ",  out))
-  })
+  }) %>% bindEvent(input$calculate_button)
   
 }
 
