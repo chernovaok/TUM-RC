@@ -390,7 +390,7 @@ server <- function(input, output, session) {
       priorbiopsy = input$priornegbiopsy
     )
     
-    out <- ifelse(!is.na(prob_tum_val), sprintf("%.1f%%", prob_tum_val * 100), NA)
+    out <- ifelse(!is.na(prob_tum_val), sprintf("%.0f%%", prob_tum_val * 100), NA)
     HTML(paste0( "TUM Risk Calculator risk is ", out ))
     # out |>
     #   format(big.mark = ",")
@@ -415,7 +415,7 @@ server <- function(input, output, session) {
       history = ifelse(input$priornegbiopsy == "yes", "Prior Negative Biopsy", "Biopsy Naive")
     )
     
-    out <- ifelse(!is.na(prob_stanf_val), sprintf("%.1f%%", prob_stanf_val * 100), NA)
+    out <- ifelse(!is.na(prob_stanf_val), sprintf("%.0f%%", prob_stanf_val * 100), NA)
     HTML(paste0( "Stanford Prostate Cancer Calculator risk is ", out ))
   }) %>% bindEvent(input$calculate_button)
   
@@ -436,7 +436,7 @@ server <- function(input, output, session) {
       race = "Caucasian", 
       priorbiopsy = input$priornegbiopsy
     )
-    out <- ifelse(!is.na(prob_ucla_val), sprintf("%.1f%%", prob_ucla_val * 100), NA)
+    out <- ifelse(!is.na(prob_ucla_val), sprintf("%.0f%%", prob_ucla_val * 100), NA)
     
     HTML(paste0(
       "Prostate Cancer Risk Calculator - MRI risk is ",  out))
