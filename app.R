@@ -1,3 +1,5 @@
+# Oksana Chernova, TUM, 2026
+
 library(shiny)
 library(bslib)
 library(dplyr)
@@ -281,14 +283,14 @@ ui <- fluidPage(
                    "priornegbiopsy",
                    "Prior negative biopsy",
                    choices = c("No" = "no", "Yes" = "yes", "Unknown" = NA),
-                   selected = "no",
+                   selected = character(0),
                    inline = TRUE
                  ),
                  radioButtons(
                    "dre",
                    "Digital rectal examination",
                    choices = c("Abnormal" = "abnormal", "Normal" = "normal", "Unknown" = NA),
-                   selected = "normal",
+                   selected = character(0),
                    inline = TRUE
                  ),
                  
