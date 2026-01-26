@@ -1,0 +1,216 @@
+---
+title: "TUM-RC coefficients"
+author: "Oksana Chernova"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This RMarkdown file contains the TUM-RC model coefficients used to predict clinically significant prostate cancer (defined as ISUP ≥ 2).
+
+#  Loading libraries
+```{r , message = FALSE, warning=FALSE}
+library(knitr)
+library(dplyr) 
+library(tidyr)
+library(stringr)
+```
+
+```{r  echo=FALSE, results = 'hide'}
+library(fmtr)
+# Create formatting list
+formatnames <- flist(char = value(condition(x == "age", "Age"),
+                                  condition(x == "(Intercept)", "Intercept"),
+                                  condition(x == "PIRADS", "PIRADS"),
+                                  condition(x == "PIRADScat24", "PIRADS 4"),
+                                  condition(x == "PIRADScat25", "PIRADS 5"),
+                                  condition(x == "PIRADScat34-5", "PIRADS 4-5"),
+                                  condition(x == "log2_psa", "log2 PSA"),
+                                  condition(x == "log2_vol", "log2 Volume"),
+                                  condition(x == "DREabnormal", "DRE abnormal"),
+                                  condition(x == "Prior_neg_biopsyYes", "Prior negative biopsy Yes"),
+                                  condition(x == "priornegbiopsyyes", "Prior negative biopsy Yes")
+))
+
+sumreg <- function(rg){
+  t <- summary(rg)
+  estim <- round(t$coef[, 1], 4) 
+  HR <- format(round(exp(t$coef[, 1]), digits=2), 2, nsmall=2) 
+  HR.confint.lower <- round(exp(t$coef[, 1] + qnorm(0.025) * t$coef[,2]), digits=2)
+  HR.confint.upper <- round(exp(t$coef[, 1] + qnorm(0.975) * t$coef[,2]), digits=2)
+  
+  HR <- paste0(HR, " (", HR.confint.lower, ", ", HR.confint.upper, ")")
+  p.value <- signif(t$coef[, 4], digits=4)
+  
+  t2 <- data.frame(estim, HR, p.value)#estim
+  t2$p.value <- ifelse(t2$p.value < 0.001, '< 0.001',format(round(t2$p.value, 3), nsmall = 3))
+  colnames(t2) <- c('Estimate', 'OR (95% CI)', 'P value')
+  # apply format
+  rownames(t2) <- fapply(rownames(t2), formatnames)
+  
+  return(kable(t2, format = 'markdown'))
+}
+```
+
+# Read data
+```{r}
+data <- read.csv("C:/Users/ochernova/mydocs/pr2/MRIbiopsy21.01.2026.csv")  
+
+dim(data) 
+
+# Define clinically significant prostate cancer as ISUP >= 2
+data <- data %>% 
+  mutate(
+    PSA = as.numeric(psa),
+    PIRADS = as.numeric(PIRADS),
+    csPCa = as.factor(ifelse(ISUP >= 2, "csPCa", "non-csPCa")),
+    csPCa2 = ifelse(ISUP >= 2, 1, 0),
+    log2_psa = log2(psa),
+    log2_vol = log2(volume)
+  )
+
+# Define factor levels ----
+data <- data %>% mutate(
+  priornegbiopsy = relevel(factor(priornegbiopsy), ref="no")
+  ,DRE = relevel(factor(DRE), ref="normal")
+)
+
+data = data[,c("age", "log2_psa", "log2_vol", "PIRADS", "DRE", "priornegbiopsy", "csPCa2")]
+```
+
+# Missing values
+```{r}
+na_counts <- colSums(is.na(data))
+print(na_counts)
+```
+
+# Model for complete cases
+```{r}
+data_complete <- data %>%
+  filter(!is.na(DRE) & !is.na(log2_vol) & !is.na(PIRADS) & !is.na(priornegbiopsy))
+
+print(paste0("sample size: ", nrow(data_complete)))
+      
+model1 <- glm(formula = csPCa2 ~  age + log2_psa + PIRADS + log2_vol + DRE + priornegbiopsy,
+              data = data_complete,
+              family=binomial(link='logit'))
+
+sumreg(model1)
+
+paste(as.character(round(summary(model1)$coef[, 1], 5)), sep="' '", collapse=", ")
+```
+
+# Model without priornegbiopsy
+```{r}
+data_bx <- data %>%
+  filter(!is.na(DRE) & !is.na(log2_vol) & !is.na(PIRADS) )
+
+print(paste0("sample size: ", nrow(data_bx)))
+      
+
+model2 <- glm(formula = csPCa2 ~  age + log2_psa + PIRADS  + log2_vol + DRE ,
+              data = data_complete,
+              family=binomial(link='logit'))
+
+sumreg(model2)
+paste(as.character(round(summary(model2)$coef[, 1], 5)), sep="' '", collapse=", ")
+```
+
+# Model without DRE
+```{r}
+data_dre <- data %>%
+  filter(!is.na(log2_vol) & !is.na(priornegbiopsy) & !is.na(PIRADS))
+
+print(paste0("sample size: ", nrow(data_dre)))
+
+model3 <- glm(formula = csPCa2 ~  age + log2_psa + PIRADS + log2_vol + priornegbiopsy,
+              data = data_dre,
+              family=binomial(link='logit'))
+
+sumreg(model3)
+paste(as.character(round(summary(model3)$coef[, 1], 5)), sep="' '", collapse=", ")
+```
+
+
+# Model without volume
+```{r}
+data_volume <- data %>%
+  filter(!is.na(DRE) & !is.na(priornegbiopsy) & !is.na(PIRADS))
+
+print(paste0("sample size: ", nrow(data_volume)))
+
+model4 <- glm(formula = csPCa2 ~  age + log2_psa + PIRADS + DRE + priornegbiopsy ,
+              data = data_volume,
+              family=binomial(link='logit'))
+
+sumreg(model4)
+paste(as.character(round(summary(model4)$coef[, 1], 5)), sep="' '", collapse=", ")
+```
+
+
+# Model without priornegbiopsy and DRE
+```{r}
+data_bxdre <- data %>%
+  filter( !is.na(log2_vol) & !is.na(PIRADS) )
+
+print(paste0("sample size: ", nrow(data_bxdre)))
+
+model5 <- glm(formula = csPCa2 ~  age + log2_psa + PIRADS + log2_vol,
+              data = data_bxdre,
+              family=binomial(link='logit'))
+
+sumreg(model5)
+paste(as.character(round(summary(model5)$coef[, 1], 5)), sep="' '", collapse=", ")
+```
+
+
+# Model without priornegbiopsy and volume
+```{r}
+data_bxvol <- data %>%
+  filter(!is.na(DRE) & !is.na(PIRADS) )
+
+print(paste0("sample size: ", nrow(data_bxvol)))
+
+model6 <- glm(formula = csPCa2 ~  age + log2_psa + PIRADS + DRE,
+              data = data_bxvol,
+              family=binomial(link='logit'))
+
+sumreg(model6)
+paste(as.character(round(summary(model6)$coef[, 1], 5)), sep="' '", collapse=", ")
+```
+
+# Model without volume and DRE
+```{r}
+data_volumedre <- data %>%
+  filter(!is.na(priornegbiopsy) & !is.na(PIRADS))
+
+print(paste0("sample size: ", nrow(data_volumedre)))
+
+model7 <- glm(formula = csPCa2 ~  age + log2_psa + PIRADS + priornegbiopsy,
+              data = data_volumedre,
+              family=binomial(link='logit'))
+
+sumreg(model7)
+paste(as.character(round(summary(model7)$coef[, 1], 5)), sep="' '", collapse=", ")
+```
+
+# Model without DRE, volume, priornegbiopsy
+```{r}
+data_volumedrebx <- data %>%
+  filter(!is.na(PIRADS))
+
+print(paste0("sample size: ", nrow(data_volumedrebx)))
+
+model8 <- glm(formula = csPCa2 ~  age + log2_psa + PIRADS,
+              data = data_volumedrebx,
+              family=binomial(link='logit'))
+
+sumreg(model8)
+paste(as.character(round(summary(model8)$coef[, 1], 5)), sep="' '", collapse=", ")
+```
