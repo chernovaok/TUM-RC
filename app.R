@@ -8,21 +8,23 @@ library(dplyr)
 # 1. RISK FUNCTIONS ----
 # ----------------------------------------------------------------------
 
-# Risk function for TUM-RC  risk calculator
+# Risk function for TUM-RC
 # Outputs risk of clinically significant prostate cancer (ISUP >= 2)
 
-coef <- matrix(c(-2.07771, 0.04981, 0.48253, 1.28603, -1.20072, 0.88053, -1.11740,
-                 -1.78074, 0.05017, 0.41618, 1.28363, -1.25050, 0.91657, NA,
-                 -2.53834, 0.05433, 0.46774, 1.40723, -1.21223, NA, -1.11284,
-                 -6.47440, 0.02571, 0.21028, 1.27058, NA, 1.03662, -1.27395,
-                 -2.27881, 0.05417, 0.40401, 1.41712, -1.25813, NA, NA,
-                 -6.34199, 0.02497, 0.11358, 1.27386, NA, 1.05844, NA,
-                 -7.11820, 0.03122, 0.19274, 1.41818, NA, NA, -1.27009,
-                 -7.03464, 0.03036, 0.10207, 1.43306, NA, NA, NA),
+# Risk function for TUM-RC ----
+# age, psa and pirads are mandatory
+coef <- matrix(c(-2.27918, 0.05139, 0.46219, 1.31431, -1.19057, 0.91551, -1.09070,
+                 -1.99885, 0.05169, 0.4002,  1.31446, -1.23796, 0.93983, NA,
+                 -2.70773, 0.0555,  0.44646, 1.43709, -1.20305, NA, -1.08037,
+                 -6.59522, 0.02665, 0.19985, 1.29563, NA, 1.07673, -1.25034,
+                 -2.45922, 0.05533, 0.38753, 1.44691, -1.24684, NA, NA,
+                 -6.47392, 0.026,   0.10883, 1.30009, NA, 1.08885, NA,
+                 -7.22844, 0.03191, 0.18077, 1.44682, NA, NA, -1.23983, 
+                 -7.15298, 0.03116, 0.09626, 1.46109, NA, NA, NA),
                byrow = T, ncol = 7)
+
 colnames(coef) <- c("(Intercept)","age","log2_psa","pirads", "log2_vol", "dre","priorbiopsy")
 
-# age, psa and pirads are mandatory
 risk_tum <- function(
     age,           # Numeric: Patient's age at biopsy.
     psa,           # Numeric: Prostate-Specific Antigen level.
@@ -60,7 +62,7 @@ risk_tum <- function(
 }  
 
 
-# Risk function for PCRC-MRI 
+# Risk function for PCRC-MRI ----
 # Kinnaird A, Brisbane W, Kwan L, et al. A prostate cancer risk calculator: Use of clinical and
 # magnetic resonance imaging data to predict biopsy outcome in North American men. Can Urol Assoc
 # J 2022;16(3):E161-6. http://dx.doi.org/10.5489/cuaj.7380
@@ -136,7 +138,10 @@ risk_ucla <- function(
   return(risk.outcome)
 }
 
-# SPCC
+# Risk function for SPCC ----
+# Wang NN, Zhou SR, Chen L, et al. The stanford prostate cancer calculator: 
+# Development and external validation of online nomograms incorporating PI-RADS scores to predict clinically significant prostate cancer. Urol Oncol. 2021;39(12):831.e19-831.e27. doi: 10.1016/j.urolonc.2021.06.004
+# https://www.med.stanford.edu/ucil/nomogram.html
 risk_stanford <- function(
     age,           # Numeric: Patient's age (ptAge)
     psa,           # Numeric: Prostate-Specific Antigen level (psa)
@@ -146,25 +151,22 @@ risk_stanford <- function(
     pirads         # Character: PIRADS Score ("PIRADS 3", "PIRADS 4", "PIRADS 5")
 ) {
   
-  pirads <- as.numeric(pirads)
-  # Define Model coefficients
+  #pirads <- as.numeric(pirads)
   
+  # Define Model coefficients
   # Fixed Intercept
   const_Intercept <- -4.326
   
   # PSA Density (psaD) is calculated as psa / volume
   psaD <- psa / volume
   
-  # Coefficients and Variances for fixed terms (psaDCoeff and bAge are used in the equation)
+  # Coefficients for psaD and age
   const_psaDCoeff     <- 7.245 # Coefficient for PSA Density
-  const_psaDCoeffVar  <- 0.859 # Variance for PSA Density
   const_bAge          <- 3.099 # Coefficient for Age (applied to age/100)
-  const_bAgeVar       <- 1.405 # Variance for Age
   
+  # Define Coefficients for Categorical Variables
   
-  # --- 2. Define Lookups for Categorical Variables (Coefficients and Variances) ---
-  
-  # Clinical History (aHx and aHxVar)
+  # Clinical History (aHx)
   history_coeff_map <- c(
     "Biopsy Naive" = 0,
     "Active Surveillance" = 0.139,
@@ -178,7 +180,7 @@ risk_stanford <- function(
     "5" = 1.717
   )
   
-  # Race (bRace and bRaceVar)
+  # Race
   race_coeff_map <- c(
     "Asian" = -0.1757,
     "Black" = -0.145,
@@ -187,8 +189,7 @@ risk_stanford <- function(
     "Other or Unknown" = 0.0
   )
   
-  # --- 3. Extract Coefficients and Variances for the specific patient ---
-  
+  # Extract Coefficients
   aHx      <- history_coeff_map[history]
   bPIRADS  <- pirads_coeff_map[as.character(pirads)]
   bRace    <- race_coeff_map[race]
@@ -198,8 +199,7 @@ risk_stanford <- function(
     stop("Invalid input for history, PIRADS, or race. Check spelling.")
   }
   
-  # Calculate Log-Odds ---
-  
+  # Calculate Log-Odds 
   log_odds <- const_Intercept +
     aHx +
     (psaD * const_psaDCoeff) +
@@ -316,8 +316,8 @@ ui <- fluidPage(
           )
         ),
         markdown("
-          **Description:** 67% csPCa, 1228 biopsies, 74% PI-RADS 4,5, Single institution in Munich, Germany <br>
-          **Includes:** 11.4% PI-RADS 2 <br>
+          **Description:** 67% csPCa, 1333 biopsies, 75% PI-RADS 4,5, Single institution in Munich, Germany <br>
+          **Includes:** 4.4% PI-RADS 2 <br>
           **Excludes:** PI-RADS 1, prior PCa diagnosis, PSA ≥ 100 ng/mL <br>
           **Not in tool:** family history, race/ethnicity"
                  #Online risk tool: Not available, only code for local
@@ -392,8 +392,7 @@ server <- function(input, output, session) {
     
     out <- ifelse(!is.na(prob_tum_val), sprintf("%.0f%%", prob_tum_val * 100), NA)
     HTML(paste0( "TUM Risk Calculator risk is ", out ))
-    # out |>
-    #   format(big.mark = ",")
+
   }) %>% bindEvent(input$calculate_button)
   
   # Render text for SPCC
