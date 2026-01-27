@@ -1,5 +1,5 @@
 """
-ERSP-RC Calculator 
+ERSPC34-RC Calculator 
 TUM, December 2025
 """
 
@@ -165,4 +165,5 @@ if __name__ == "__main__":
     input_file = sys.argv[1] if len(sys.argv) > 1 else "data_input.csv"
     output_file = sys.argv[2] if len(sys.argv) > 2 else "erspc_output.csv"
     
+
     main(input_file, output_file)
