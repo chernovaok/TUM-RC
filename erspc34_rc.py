@@ -164,6 +164,4 @@ if __name__ == "__main__":
     # Use command line arguments if provided, else use defaults
     input_file = sys.argv[1] if len(sys.argv) > 1 else "data_input.csv"
     output_file = sys.argv[2] if len(sys.argv) > 2 else "erspc_output.csv"
-    
-
     main(input_file, output_file)
