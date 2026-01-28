@@ -1,5 +1,8 @@
 This repository contains the code and supporting materials for the paper: 'Establishing an Automated Cross-Platform Evaluation of Prostate Cancer Risk.' Includes web-scraping scripts, data processing pipelines,  and the interactive R Shiny application.
 
+# R shiny
+The code for the [Shiny app](https://91mq7l-chernovaok.shinyapps.io/TUM-RC/) that accompanies the manuscript is in app.R
+
 # Software versions
 We used R version 4.5.2 and the following R package versions:
 ```
