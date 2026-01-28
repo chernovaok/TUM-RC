@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Oksana Chernova, TUM, 2026
 # Generate figures for the manuscript
 
@@ -1452,4 +1451,3 @@ rtum <- plot_risk_violin(
 png(paste0(getwd(),"/Figures/FigAp2.png"), width = 11, height = 8.25, units = "in", res = 300)
 rba + rer + rny  + rucla + rstanford + rtum 
 dev.off()
->>>>>>> 57ef5b96a9f867d262e658be1202c59ddc849995
