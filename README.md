@@ -4,7 +4,9 @@ This repository contains the code and supporting materials for the paper: 'Estab
 
 The code for the [Shiny app](https://91mq7l-chernovaok.shinyapps.io/TUM-RC/) that accompanies the manuscript is in app.R
 
-## Execution Guide: Web-Scraping
+## Web-Scraping: Execution Guide
+
+The code for the web-scraping is in the folder `Python`.
 
 For ERSPC34-RC
 
