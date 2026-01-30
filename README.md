@@ -1,4 +1,4 @@
-This repository contains the code and supporting materials for the paper: 'Establishing an Automated Cross-Platform Evaluation of Prostate Cancer Risk.' Includes web-scraping scripts, data processing pipelines, and the interactive R Shiny application.
+This repository contains the code and supporting materials for the paper: 'Establishing an automated Cross-Platform Evaluation of Patients Prostate Cancer Risk: Leveraging Local German Hospital Data'. Includes web-scraping scripts, data processing pipelines, and the interactive R Shiny application.
 
 # Shiny app
 
