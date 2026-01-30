@@ -1,0 +1,368 @@
+---
+title: "Model development"
+author: "Oksana Chernova"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Loading libraries
+```{r }
+library(openxlsx)
+library(dplyr)
+library(ggplot2)
+library(ggExtra)
+library(patchwork)
+library(stringr)
+library(knitr)
+library(gtsummary)
+```
+
+# Read excel sheet
+```{r }
+# Set working directory
+setwd("//nas.ads.mwn.de/tuma/m12/Projects/TUM MRI biopsy")
+
+data <- read.xlsx(paste0(getwd(),"/Biopsien.Update.21.01.2026.xlsx")
+                  ,sheet = "Tabelle1 (cleaned)"
+                  ,detectDates = TRUE)
+
+dim(data)
+
+c(min(data$Date_Biopsy), max(data$Date_Biopsy)) 
+```
+
+# Data pre-processing
+```{r }
+colnames(data)[c(26, 27, 28)] <- c("Experience_total", "Experience_transrectal", "Experience_perineal")
+
+# Extract the text before the dot
+extracted_text <- gsub("\\..*", "", colnames(data))
+colnames(data) <- extracted_text
+
+# Data pre-processing
+data <- data %>% 
+  rename(Insurance = Incurance) %>% 
+  mutate(
+    Insurance = factor(tolower(Insurance), levels = c("a", "p"), labels = c( "Public", "Privat")),
+    Age = as.numeric(Age),
+    DRE = tolower(DRE),
+    Biopsy_type = case_when(
+      Biopsy_type %in% c("Target + Systematic", "Target+Systematic", 
+                         "Targeted+Systematic") ~ "Targeted+Systematic",
+      TRUE ~ Biopsy_type
+    ),
+    Volume = ifelse(Volume %in% c("?", "Na"), NA, Volume),
+    PIRADS = ifelse(PIRADS %in% c("?", "-"), NA, PIRADS),
+    ISUP = ifelse(ISUP %in% c("?", "-"), NA, ISUP),
+    Target_cores_taken = ifelse(Target_cores_taken %in% c("?", "-"), NA, Target_cores_taken),
+    L1_region = ifelse(L1_region %in% c("?", "-"), NA, L1_region),
+    L1_sector = ifelse(L1_sector %in% c("?", "-"), NA, L1_sector),
+    L1_cores_taken = ifelse(L1_cores_taken %in% c("?", "-"), NA, L1_cores_taken),
+    L2_PIRADS = ifelse(L2_PIRADS %in% c("?", "-"), NA, L2_PIRADS),
+    L2_ISUP = ifelse(L2_ISUP %in% c("?", "-"), NA, L2_ISUP),
+    # remove space from start and end of string
+    Prior_neg_biopsy = str_trim(Prior_neg_biopsy),
+    Biopsy_method = str_trim(Biopsy_method),
+    Target_method = str_trim(Target_method),
+    L1_side = str_trim(L1_side),
+    L3_region = str_trim(L3_region)
+  ) %>% mutate(
+    Volume = as.numeric(Volume, na.strings = "NA"),
+    ISUP = as.numeric(ISUP, na.strings = "NA")
+  )
+
+# PSA values with special symbols ----
+# Filter for rows where the 'PSA' contains '>', '?' or ','
+df_psa_sym <- data %>%
+  filter(str_detect(PSA, "[>?,]") ) %>% 
+  select(ID, Date_Biopsy, Prior_cancer, PSA, DRE, PIRADS, ISUP, Biopsy_type, Biopsy_method)
+
+#kable(df_psa_sym, format = 'markdown')
+
+# Extract a value that follows a ">"
+data$PSA <- ifelse(grepl("^>",data$PSA), sub("^>", "", data$PSA), data$PSA)
+# Extract a value that follows a "?"
+data$PSA <- gsub("\\?", "", data$PSA)
+data$PSA <- gsub("\\,", ".", data$PSA)
+
+data$PSA <- as.numeric(data$PSA, na.strings = "NA")
+
+psa_large <- data %>%
+  filter(PSA >= 100) %>% 
+  select(ID, Date_Biopsy, Prior_cancer, PSA, DRE, PIRADS, ISUP, Biopsy_type, Biopsy_method) %>% 
+  arrange(PSA)
+nrow(psa_large)
+
+#kable(psa_large, format = 'markdown')
+
+# Data processing
+
+data <- data %>% 
+  mutate(PIRADScat = as.factor(case_when(
+           PIRADS == 0 ~ "PI-RADS=0",
+           PIRADS == 1 ~ "PI-RADS=1",
+           PIRADS == 2 ~ "PI-RADS=2",
+           PIRADS == 3 ~ "PI-RADS=3",
+           PIRADS == 4 ~ "PI-RADS=4",
+           PIRADS == 5 ~ "PI-RADS=5",
+           TRUE ~ NA
+         )),
+         PIRADScat2 = case_when(
+           PIRADS %in% 2:3 ~ "2-3",
+           PIRADS == 4 ~ "4",
+           PIRADS == 5 ~ "5",
+           TRUE ~ NA
+         ),
+         PIRADScat3 = case_when(
+           PIRADS %in% 2:3 ~ "2-3",
+           PIRADS >= 4 ~ "4-5",
+           TRUE ~ NA
+         ),
+         ISUPcat = case_when(
+           ISUP < 2 ~ "ISUP<2",
+           ISUP == 2 ~ "ISUP=2",
+           ISUP > 2 ~ "ISUP>2",
+           TRUE ~ NA),
+         csPCa = factor(ifelse(ISUP >= 2, "csPCa", "non-csPCa"), 
+                        levels = c("non-csPCa", "csPCa"))
+  )
+
+# Potential exclusions
+table(data$Prior_cancer, useNA="always")
+
+excl1 <- data %>% 
+  filter(Prior_cancer %in% c("Yes")| PIRADS %in% c("1","PET CT")| is.na(PIRADS)) %>% 
+  select(ID, Date_Biopsy, Prior_cancer, PSA, DRE, PIRADS, ISUP, Biopsy_type, Biopsy_method)%>%
+  arrange(desc(Prior_cancer), PSA)
+
+excl2 <- data %>% filter(!(ID %in%  excl1$ID) ) %>% 
+  filter(PSA >= 100) %>% 
+  select(ID, Date_Biopsy, Prior_cancer, PSA, DRE, PIRADS, ISUP, Biopsy_type, Biopsy_method)%>%
+  arrange(desc(Prior_cancer), PSA)
+
+excl <- data %>% 
+  filter(Prior_cancer %in% c("Yes")| PIRADS %in% c("1","PET CT")| PSA >= 100 | 
+           is.na(Biopsy_type) | is.na(PIRADS)) %>% 
+  select(ID, Date_Biopsy, Prior_cancer, PSA, DRE, PIRADS, ISUP, Biopsy_type, Biopsy_method)%>%
+  arrange(desc(Prior_cancer), PSA)
+
+nrow(excl)
+
+# kable(excl, format = 'markdown')
+# ID of potential exclusions
+# print(excl$ID)
+
+# Fiter data set ----
+data <- data %>%
+  filter(!(ID %in%  excl$ID))
+
+table(data$PIRADS, useNA = "always")
+
+
+data <- data %>% 
+  mutate(PIRADS = as.numeric(PIRADS),
+         Systematic_cores_taken = as.numeric(Systematic_cores_taken, na.strings = "NA"),
+         Target_cores_taken = as.numeric(Target_cores_taken, na.strings = "NA") 
+  ) %>% mutate( Cores = Systematic_cores_taken + Target_cores_taken)
+
+# csPCa as ISUP >=2
+data <- data %>% 
+  mutate(
+    csPCa2 = ifelse(ISUP >= 2, TRUE, FALSE),
+    log2_psa = log2(PSA),
+    log2_vol = log2(Volume),
+    log2_density = ifelse(!is.na(Volume),log2(PSA/Volume), NA),
+    Age_cat = case_when(
+      Age < 50 ~ "<50",
+      Age < 60 ~ "50-59",
+      Age < 70 ~ "60-69",
+      Age < 80 ~ "70-79",
+      Age >= 80 ~ "80-90",
+    ),
+    PSA_cat = case_when(
+      PSA <= 3 ~ "[0,3]",
+      PSA <= 4 ~ "(3,4]",
+      PSA <= 5 ~ "(4,5]",
+      PSA <= 6 ~ "(5,6]",
+      PSA <= 7 ~ "(6,7]",
+      PSA <= 10 ~ "(7,10]",
+      PSA > 10 & PSA < 100 ~ "(10,100)",
+      TRUE ~ NA)  
+  )
+
+# Define factor levels ----
+data <- data %>% mutate(
+  Prior_neg_biopsy = relevel(factor(Prior_neg_biopsy), ref="No")
+  ,DRE = relevel(factor(DRE), ref="normal")
+  ,Biopsy_type = factor(Biopsy_type, levels= c("Systematic", "Targeted only", "Targeted+Systematic"))
+  ,Biopsy_method = relevel(factor(Biopsy_method), ref="Transperineal")
+  ,ISUPcat = factor(ISUPcat, levels = c("ISUP<2" , "ISUP=2", "ISUP>2"))
+  ,Age_cat = factor(Age_cat, levels = c("<50", "50-59", "60-69", "70-79", "80-90"))
+  ,PSA_cat = factor(PSA_cat, levels = c("[0,3]", "(3,4]", "(4,5]", "(5,6]", "(6,7]", "(7,10]", "(10,100)"))
+  ,PIRADScat2 = factor(PIRADScat2, levels = c("2-3", "4", "5"))
+  ,PIRADScat3 = factor(PIRADScat3, levels = c("2-3", "4-5"))
+  ,csPCa = factor(csPCa, levels = c("non-csPCa", "csPCa"))
+)
+```
+
+# Table 1. Clinical characteristics of the study sample and differences between non-csPCa and csPCa patients
+```{r }
+data |> 
+  group_by(csPCa) |> 
+  tbl_summary( 
+    by = csPCa, 
+    include = c(Age, 
+                #Age_cat,
+                #PSA_cat,
+                PSA, 
+                Volume,
+                PIRADS, 
+                #Prior_cancer,
+                #Insurance,
+                DRE, 
+                Prior_neg_biopsy, 
+                Biopsy_type,
+                Biopsy_method,
+                Cores
+                #PIRADScat2,
+                #ISUP,
+                #Systematic_cores_taken, 
+                #Target_cores_taken
+    ),
+    missing_text = "Missing",
+    label = list(
+      Age_cat = "Age (years)",
+      PSA_cat = "PSA",
+      Prior_cancer = "Prior Cancer",
+      Prior_neg_biopsy = "Prior negative biopsy",
+      Biopsy_method = "Biopsy method",
+      Biopsy_type = "Biopsy type",
+      PIRADScat2 = "PIRADS category",
+      Systematic_cores_taken = "Systematic cores",
+      Target_cores_taken = "Target cores"
+    ),
+    type = all_continuous() ~ "continuous2", # Change to multi-line summary
+    statistic = list(
+      all_continuous() ~ c(
+        "{median} ({p25}, {p75})", # First row
+        "({min}, {max})"           # Second row (Min, Max)
+      )
+    )
+  )|>
+  # 1. Add the Overall (Total) column first (default behavior of last=FALSE)
+  add_overall() |> 
+  # 2. Add the P-value column last
+  add_p()
+
+# save as csv
+# df_save <- data %>%
+#   select(Age, PSA, Volume, DRE, PIRADS, Prior_neg_biopsy, ISUP) %>%
+#   mutate(Prior_neg_biopsy = tolower(Prior_neg_biopsy)
+#          ) %>%
+#   rename(age = Age,
+#          psa = PSA,
+#          volume = Volume,
+#          priornegbiopsy = Prior_neg_biopsy
+#          )
+
+# write.table(
+#   x = df_save,
+#   file = "C:/Users/ochernova/mydocs/pr2/MRIbiopsy21.01.2026.csv",
+#   sep=",",
+#   quote = FALSE,
+#   row.names = FALSE
+# )
+```
+
+# Fit logistic regression for complete cases 
+```{r }
+data_filt <- data %>%
+  filter(!is.na(DRE) & !is.na(Volume) & !is.na(PIRADS)
+         & !is.na(Prior_neg_biopsy) & !is.na(Prior_neg_biopsy))
+
+print(paste0("sample size complete cases ", nrow(data_filt)))
+print(paste0("csPCa ", nrow(data_filt[which(data_filt$csPCa == "csPCa"),])))
+print(paste0("percent csPCa ", nrow(data_filt[which(data_filt$csPCa == "csPCa"),])/ nrow(data_filt)))
+
+
+# df_comp <- data_filt %>%
+#   select(Age, PSA, Volume, DRE, PIRADS, Prior_neg_biopsy) %>%
+#   mutate(Prior_neg_biopsy = tolower(Prior_neg_biopsy),
+#          id = row_number()
+#   ) %>%
+#   rename(
+#     age = Age,
+#     psa = PSA,
+#     dre = DRE,
+#     volume = Volume,
+#     pirads = PIRADS,
+#     priornegbiopsy = Prior_neg_biopsy
+#   )
+
+# write.table(
+#   x = df_comp,
+#   file = "C:/Users/ochernova/mydocs/webscr/datacomp.csv",
+#   sep = ",",
+#   row.names = FALSE,
+#   quote = FALSE
+# )
+
+
+sumreg <- function(rg){
+  t <- summary(rg)
+  estim <- format(round(signif(t$coef[, 1], digits=2), 2), nsmall=2) 
+  HR <- format(round(exp(t$coef[, 1]), digits=2), 2, nsmall=2) 
+  HR.confint.lower <- format(round(exp(t$coef[, 1] + qnorm(0.025) * t$coef[,2]), digits=2), 2, nsmall=2) 
+  HR.confint.upper <- format(round(exp(t$coef[, 1] + qnorm(0.975) * t$coef[,2]), digits=2), 2, nsmall=2)
+  
+  HR <- paste0(HR, " (", HR.confint.lower, ", ", HR.confint.upper, ")")
+  p.value<-signif(t$coef[, 4], digits=4)
+  
+  t2 <- data.frame(HR, p.value)#estim
+  t2$p.value <- ifelse(t2$p.value < 0.001, '< 0.001',format(round(t2$p.value, 3), nsmall = 3))
+  colnames(t2) <- c('OR (95% CI)', 'P value')
+  return(kable(t2, format = 'markdown'))
+}
+
+# Fit the model
+model1 <- glm(formula = csPCa2 ~ Age + log2_psa + PIRADS + log2_vol + DRE + Prior_neg_biopsy,
+              data = data_filt, 
+              family=binomial(link='logit'))
+
+BIC(model1)
+round(summary(model1)$coef[, 1],5)
+summary(model1)
+sumreg(model1)
+```
+
+
+# Imputation using mice method="pmm", m=5
+```{r }
+datacov = data[,c("Age", "log2_psa", "log2_vol", "PIRADS", "DRE", "Prior_neg_biopsy", "csPCa2")] 
+na_counts <- colSums(is.na(datacov))
+print(na_counts)
+
+# Imputation
+library(mice)
+set.seed(2025)
+impdata = mice(datacov, method="pmm", m=5)
+
+# Model 1 on imputed data with PSA and Volume, PIRADS cont
+fit2025m1 <- with(
+  data = impdata,
+  expr = glm(
+    formula = csPCa2 ~  Age + log2_psa + PIRADS + log2_vol  + DRE + Prior_neg_biopsy,
+    family=binomial(link='logit')
+  )
+)
+
+m1 <- summary(pool(fit2025m1))
+round(m1[,2],5)
+m1
+```
+
