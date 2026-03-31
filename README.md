@@ -8,6 +8,12 @@ The code for the [Shiny app](https://91mq7l-chernovaok.shinyapps.io/TUM-RC/) tha
 
 The code for the web-scraping is in the folder `Python`.
 
+For BNC2-RC
+
+```         
+python bcn2_rc.py sample_inputs.csv bcn2_rc_output.csv
+```
+
 For ERSPC34-RC
 
 ```         
