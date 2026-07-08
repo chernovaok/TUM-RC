@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;}
+body{margin:0;}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{opacity:.35;}
+@keyframes riseIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+</style>
+</helmet>
+<div style="font-family:'Public Sans',system-ui,sans-serif;min-height:100vh;background:#eef2f0;color:#15201d;-webkit-font-smoothing:antialiased;">
+
+  <div style="position:sticky;top:0;z-index:20;background:#15201d;color:#fff;">
+    <div style="max-width:1180px;margin:0 auto;padding:13px 22px;">
+      <span style="font-weight:800;font-size:15px;letter-spacing:-.01em;">Prostate Cancer Risk</span>
+    </div>
+  </div>
+
+  <div style="background:#eef2f0;">
+    <div style="max-width:1180px;margin:0 auto;padding:28px 22px 60px;display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start;">
+
+      <section style="flex:1 1 320px;max-width:432px;background:#fff;border:1px solid #e0e7e3;border-radius:18px;box-shadow:0 2px 4px rgba(15,40,32,.04),0 16px 32px -20px rgba(15,40,32,.22);padding:24px 24px 26px;">
+        <div style="font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:#0c5c50;font-weight:700;">Patient characteristics</div>
+        <h2 style="margin:6px 0 20px;font-size:21px;font-weight:700;color:#15201d;letter-spacing:-.01em;">Clinical inputs</h2>
+
+        <label style="display:block;margin-bottom:15px;">
+          <span style="display:block;font-size:13.5px;font-weight:600;color:#3a4744;margin-bottom:6px;">Age <span style="color:#9aa6a1;font-weight:500;">&#183; years</span></span>
+          <input type="number" step="any" inputmode="decimal" placeholder="e.g. 65" value="{{ age }}" onInput="{{ onAge }}" style="width:100%;padding:11px 13px;border:1.5px solid #d6dcd9;border-radius:10px;font-size:16px;font-family:'Public Sans',sans-serif;color:#15201d;background:#fbfcfb;outline:none;" style-focus="border-color:#0c5c50;background:#fff;box-shadow:0 0 0 3px rgba(12,92,80,.13);" />
+        </label>
+        <label style="display:block;margin-bottom:15px;">
+          <span style="display:block;font-size:13.5px;font-weight:600;color:#3a4744;margin-bottom:6px;">PSA <span style="color:#9aa6a1;font-weight:500;">&#183; ng/mL</span></span>
+          <input type="number" step="any" inputmode="decimal" placeholder="e.g. 6.4" value="{{ psa }}" onInput="{{ onPsa }}" style="width:100%;padding:11px 13px;border:1.5px solid #d6dcd9;border-radius:10px;font-size:16px;font-family:'Public Sans',sans-serif;color:#15201d;background:#fbfcfb;outline:none;" style-focus="border-color:#0c5c50;background:#fff;box-shadow:0 0 0 3px rgba(12,92,80,.13);" />
+        </label>
+        <label style="display:block;margin-bottom:16px;">
+          <span style="display:block;font-size:13.5px;font-weight:600;color:#3a4744;margin-bottom:6px;">Prostate volume <span style="color:#9aa6a1;font-weight:500;">&#183; mL &#183; optional</span></span>
+          <input type="number" step="any" inputmode="decimal" placeholder="leave blank if unknown" value="{{ volume }}" onInput="{{ onVolume }}" style="width:100%;padding:11px 13px;border:1.5px solid #d6dcd9;border-radius:10px;font-size:16px;font-family:'Public Sans',sans-serif;color:#15201d;background:#fbfcfb;outline:none;" style-focus="border-color:#0c5c50;background:#fff;box-shadow:0 0 0 3px rgba(12,92,80,.13);" />
+        </label>
+
+        <div style="margin-bottom:15px;">
+          <span style="display:block;font-size:13.5px;font-weight:600;color:#3a4744;margin-bottom:8px;">PI-RADS</span>
+          <div style="display:flex;gap:8px;">
+            <sc-for list="{{ piradsOpts }}" as="opt" hint-placeholder-count="4">
+              <button type="button" data-value="{{ opt.v }}" onClick="{{ pickPirads }}" style="{{ opt.style }}">{{ opt.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="margin-bottom:15px;">
+          <span style="display:block;font-size:13.5px;font-weight:600;color:#3a4744;margin-bottom:8px;">Prior negative biopsy</span>
+          <div style="display:flex;gap:8px;">
+            <sc-for list="{{ biopsyOpts }}" as="opt" hint-placeholder-count="3">
+              <button type="button" data-value="{{ opt.v }}" onClick="{{ pickBiopsy }}" style="{{ opt.style }}">{{ opt.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="margin-bottom:18px;">
+          <span style="display:block;font-size:13.5px;font-weight:600;color:#3a4744;margin-bottom:8px;">Digital rectal examination</span>
+          <div style="display:flex;gap:8px;">
+            <sc-for list="{{ dreOpts }}" as="opt" hint-placeholder-count="3">
+              <button type="button" data-value="{{ opt.v }}" onClick="{{ pickDre }}" style="{{ opt.style }}">{{ opt.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <sc-if value="{{ showDisclaimer }}"><p style="margin:2px 0 0;padding-top:16px;border-top:1px solid #eef2f0;font-size:11.5px;line-height:1.55;color:#8a9590;">Estimates update automatically as you edit. Decision-support only &#8212; not a substitute for clinical judgement.</p></sc-if>
+      </section>
+
+      <section style="flex:999 1 460px;min-width:0;">
+        <h1 style="margin:4px 0 4px;font-size:clamp(22px,3vw,30px);font-weight:800;letter-spacing:-.02em;color:#15201d;">Risk of clinically significant prostate cancer</h1>
+        <p style="margin:0 0 22px;font-size:15px;color:#5d6b66;line-height:1.5;">Estimated probability of ISUP &#8805; 2 disease on biopsy, across three externally validated models.</p>
+        <div id="riskResults">
+          <sc-if value="{{ showMandatory }}">
+            <div style="background:#fef6e7;border:1px solid #f0dcae;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13.5px;color:#8a6d1f;font-weight:600;">Age, PSA and a PI-RADS score are required to calculate risk.</div>
+          </sc-if>
+          <sc-if value="{{ combined.any }}">
+            <div style="background:#0c5c50;color:#fff;border-radius:16px;padding:22px 24px;margin-bottom:18px;box-shadow:0 14px 30px -18px rgba(12,92,80,.75);">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+                <div style="min-width:0;">
+                  <div style="font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:rgba(255,255,255,.72);">Average across models</div>
+                  <div style="display:flex;align-items:baseline;gap:10px;margin-top:7px;flex-wrap:wrap;">
+                    <span style="font-size:clamp(34px,6vw,48px);font-weight:800;line-height:1;letter-spacing:-.02em;">{{ combined.avgText }}</span>
+                    <span style="font-size:14px;color:rgba(255,255,255,.8);">estimated ISUP &#8805; 2 risk</span>
+                  </div>
+                </div>
+                <div style="display:inline-block;padding:5px 13px;border-radius:999px;font-size:12.5px;font-weight:700;background:{{ combined.cat.bg }};color:{{ combined.cat.fg }};white-space:nowrap;">{{ combined.cat.label }}</div>
+              </div>
+              <div style="margin-top:16px;height:8px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden;">
+                <div style="height:100%;border-radius:999px;width:{{ combined.barWidth }}%;background:#fff;transition:width .5s ease;"></div>
+              </div>
+              <div style="margin-top:9px;font-size:13px;color:rgba(255,255,255,.78);">{{ combined.count }} applicable models &#183; range {{ combined.range }}</div>
+            </div>
+          </sc-if>
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <sc-for list="{{ cards }}" as="item" hint-placeholder-count="3">
+              <article style="background:#fff;border:1px solid #e0e7e3;border-radius:16px;padding:20px 22px;box-shadow:0 2px 4px rgba(15,40,32,.04);">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+                  <div style="min-width:0;">
+                    <div style="font-size:17px;font-weight:700;color:#15201d;">{{ item.short }}</div>
+                    <div style="font-size:13px;color:#7a857f;margin-top:2px;">{{ item.name }}</div>
+                  </div>
+                  <sc-if value="{{ item.ok }}">
+                    <div style="text-align:right;">
+                      <div style="font-size:clamp(30px,5vw,42px);font-weight:800;line-height:1;letter-spacing:-.02em;color:{{ item.cat.fg }};">{{ item.pctText }}</div>
+                      <div style="display:inline-block;margin-top:6px;padding:3px 11px;border-radius:999px;font-size:12px;font-weight:700;background:{{ item.cat.bg }};color:{{ item.cat.fg }};">{{ item.cat.label }}</div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ item.notOk }}">
+                    <div style="text-align:right;max-width:220px;"><div style="font-size:13px;font-weight:600;color:#9a7218;background:#f7efe0;padding:8px 12px;border-radius:10px;">{{ item.reason }}</div></div>
+                  </sc-if>
+                </div>
+                <sc-if value="{{ item.ok }}">
+                  <div style="margin-top:16px;height:9px;border-radius:999px;background:#eef2f0;overflow:hidden;"><div style="height:100%;border-radius:999px;width:{{ item.barWidth }}%;background:{{ item.cat.fg }};transition:width .5s ease;"></div></div>
+                </sc-if>
+                <button type="button" data-k="{{ item.id }}" onClick="{{ toggleInfo }}" style="margin-top:15px;background:none;border:none;padding:0;display:inline-flex;align-items:center;gap:7px;color:#0c5c50;font-family:'Public Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer;">
+                  <span style="display:inline-flex;width:17px;height:17px;border-radius:50%;border:1.5px solid #0c5c50;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-style:italic;">i</span>
+                  Model details &amp; inputs used
+                </button>
+                <sc-if value="{{ item.open }}">
+                  <div style="margin-top:14px;padding-top:14px;border-top:1px solid #eef2f0;font-size:13.5px;line-height:1.6;color:#48534e;">
+                    <div style="margin-bottom:8px;"><strong style="color:#2b3531;">Cohort:</strong> {{ item.description }}</div>
+                    <div style="margin-bottom:8px;"><strong style="color:#2b3531;">Excludes:</strong> {{ item.excludes }}</div>
+                    <div style="margin-bottom:11px;"><strong style="color:#2b3531;">Not in tool:</strong> {{ item.notInTool }}</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                      <sc-for list="{{ item.uses }}" as="use" hint-placeholder-count="5">
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;background:#eef2f0;color:#3a4744;padding:3px 8px;border-radius:6px;">{{ use }}</span>
+                      </sc-for>
+                    </div>
+                    <sc-if value="{{ item.link }}"><a href="{{ item.link }}" target="_blank" rel="noopener" style="display:inline-block;margin-top:11px;color:#0c5c50;font-weight:600;font-size:13px;">Open online tool &#8599;</a></sc-if>
+                  </div>
+                </sc-if>
+              </article>
+            </sc-for>
+          </div>
+          <div style="margin-top:22px;">
+            <div style="font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:#7a857f;margin-bottom:12px;">What each model uses</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+              <sc-for list="{{ cards }}" as="item" hint-placeholder-count="3">
+                <div style="background:#fff;border:1px solid #e0e7e3;border-radius:14px;padding:16px 18px;">
+                  <div style="font-weight:700;font-size:14px;color:#15201d;">{{ item.short }}</div>
+                  <div style="font-size:12px;color:#7a857f;margin:2px 0 11px;">{{ item.name }}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                    <sc-for list="{{ item.uses }}" as="use" hint-placeholder-count="5"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;background:#eef2f0;color:#3a4744;padding:3px 7px;border-radius:6px;">{{ use }}</span></sc-for>
+                  </div>
+                  <sc-if value="{{ item.link }}"><a href="{{ item.link }}" target="_blank" rel="noopener" style="display:inline-block;margin-top:11px;font-size:12.5px;font-weight:600;color:#0c5c50;">Online tool &#8599;</a></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:&quot;100%&quot;,&quot;height&quot;:820},&quot;lowCut&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:15,&quot;min&quot;:5,&quot;max&quot;:20,&quot;step&quot;:1,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Risk thresholds&quot;},&quot;modCut&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:50,&quot;min&quot;:15,&quot;max&quot;:60,&quot;step&quot;:1,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Risk thresholds&quot;},&quot;showDisclaimer&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Content&quot;}}">
+class Component extends DCLogic {
+  TUM_ROWS = [
+    [-2.27918,0.05139,0.46219,1.31431,-1.19057,0.91551,-1.09070],
+    [-1.99885,0.05169,0.4002,1.31446,-1.23796,0.93983,null],
+    [-2.70773,0.0555,0.44646,1.43709,-1.20305,null,-1.08037],
+    [-6.59522,0.02665,0.19985,1.29563,null,1.07673,-1.25034],
+    [-2.45922,0.05533,0.38753,1.44691,-1.24684,null,null],
+    [-6.47392,0.026,0.10883,1.30009,null,1.08885,null],
+    [-7.22844,0.03191,0.18077,1.44682,null,null,-1.23983],
+    [-7.15298,0.03116,0.09626,1.46109,null,null,null]
+  ];
+  CALCS = {
+    tum:{short:'TUM-RC',name:'TUM Risk Calculator',place:'Munich, Germany',description:'67% csPCa across 1,333 biopsies, 75% PI-RADS 4\u20135, single institution in Munich, Germany.',excludes:'PI-RADS 1, prior PCa diagnosis, PSA \u2265 100 ng/mL',notInTool:'family history, race / ethnicity',link:null,uses:['Age','PSA','PI-RADS','Volume (opt.)','DRE (opt.)','Prior biopsy (opt.)']},
+    spcc:{short:'SPCC',name:'Stanford Prostate Cancer Calculator',place:'Stanford \u00b7 Yale \u00b7 Alabama, USA',description:'54% csPCa across 1,922 biopsies, 75% PI-RADS 4\u20135, multiple institutions in Stanford, Yale and Alabama, USA.',excludes:'PI-RADS 1 or 2',notInTool:'DRE, family history',link:'https://www.med.stanford.edu/ucil/nomogram.html',uses:['Age','PSA','PI-RADS 3\u20135','Volume','Prior biopsy']},
+    ucla:{short:'PCRC-MRI',name:'Prostate Cancer Risk Calculator \u2014 MRI',place:'Cornell, NY \u00b7 Los Angeles, CA',description:'40% csPCa across 2,354 biopsies, 52% PI-RADS 4\u20135, multiple institutions in Cornell, NY and Los Angeles, CA, USA.',excludes:'prior PCa diagnosis',notInTool:'family history',link:'https://www.uclahealth.org/departments/urology/iuo/research/prostate-cancer/risk-calculator-mri-guided-biopsy-pcrc-mri',uses:['Age','PSA','PI-RADS','Volume','DRE','Prior biopsy']}
+  };
+  PRIMARY = '#0c5c50';
+  RISK = {
+    low:{label:'Lower risk',short:'Lower',fg:'#1f7a4d',bg:'#e7f3ec'},
+    mod:{label:'Moderate risk',short:'Moderate',fg:'#a9701a',bg:'#f7efe0'},
+    high:{label:'Higher risk',short:'Higher',fg:'#b13f2c',bg:'#f7e8e4'}
+  };
+  state = { age:'65', psa:'6.4', volume:'50', pirads:'4', priornegbiopsy:'no', dre:'normal', open:{} };
+
+  logistic(x){ const e=Math.exp(x); return e/(1+e); }
+
+  onAge = e => this.setState({age:e.target.value});
+  onPsa = e => this.setState({psa:e.target.value});
+  onVolume = e => this.setState({volume:e.target.value});
+  pickPirads = e => this.setState({pirads:e.currentTarget.dataset.value});
+  pickBiopsy = e => this.setState({priornegbiopsy:e.currentTarget.dataset.value});
+  pickDre = e => this.setState({dre:e.currentTarget.dataset.value});
+  toggleInfo = e => { const k=e.currentTarget.dataset.k; this.setState(s=>({open:Object.assign({},s.open,{[k]:!s.open[k]})})); };
+
+  category(risk,lc,mc){ const p=risk*100; if(p<lc) return this.RISK.low; if(p<mc) return this.RISK.mod; return this.RISK.high; }
+
+  computeTum(age,psa,volume,pirads,dre,pb){
+    if(!(psa>0&&psa<=100)) return {ok:false,reason:'Enter PSA (0\u2013100 ng/mL)'};
+    if(!(age>=30&&age<=90)) return {ok:false,reason:'Enter age (30\u201390 yrs)'};
+    const pr=Number(pirads); if(!(pr>=2&&pr<=5)) return {ok:false,reason:'Select a PI-RADS score'};
+    const volMissing=(volume===''||volume==null||isNaN(volume));
+    if(!volMissing&&(volume<=0||volume>300)) return {ok:false,reason:'Volume must be 0\u2013300 mL'};
+    const dreMissing=(!dre||dre==='unknown');
+    const pbMissing=(!pb||pb==='unknown');
+    const row=this.TUM_ROWS.find(r=>(r[4]===null)===volMissing&&(r[5]===null)===dreMissing&&(r[6]===null)===pbMissing);
+    if(!row) return {ok:false,reason:'Input combination not supported'};
+    let lo=row[0]+row[1]*age+row[2]*Math.log2(psa)+row[3]*pr;
+    if(!volMissing) lo+=row[4]*Math.log2(volume);
+    if(!dreMissing) lo+=row[5]*(dre==='abnormal'?1:0);
+    if(!pbMissing) lo+=row[6]*(pb==='yes'?1:0);
+    return {ok:true,risk:this.logistic(lo)};
+  }
+  computeSpcc(age,psa,volume,pirads,pb){
+    if(!(psa>0&&psa<=100)) return {ok:false,reason:'Enter PSA (0\u2013100 ng/mL)'};
+    if(!(age>=30&&age<=90)) return {ok:false,reason:'Enter age (30\u201390 yrs)'};
+    const pr=Number(pirads); if(!(pr>=3&&pr<=5)) return {ok:false,reason:'Validated for PI-RADS 3\u20135'};
+    if(volume===''||volume==null||isNaN(volume)) return {ok:false,reason:'Add prostate volume'};
+    if(volume<=0||volume>300) return {ok:false,reason:'Volume must be 0\u2013300 mL'};
+    if(!(pb==='yes'||pb==='no')) return {ok:false,reason:'Set prior-biopsy status'};
+    const psaD=psa/volume; const aHx=pb==='yes'?-0.6112:0; const bP=pr===4?1.051:(pr===5?1.717:0);
+    const lo=-4.326+aHx+psaD*7.245+0.4736+3.099*age/100+bP;
+    return {ok:true,risk:this.logistic(lo)};
+  }
+  computeUcla(age,psa,volume,pirads,dre,pb){
+    if(!(psa>0&&psa<=100)) return {ok:false,reason:'Enter PSA (0\u2013100 ng/mL)'};
+    if(!(age>=30&&age<=90)) return {ok:false,reason:'Enter age (30\u201390 yrs)'};
+    const pr=Number(pirads); if(!(pr>=2&&pr<=5)) return {ok:false,reason:'Select a PI-RADS score'};
+    if(volume===''||volume==null||isNaN(volume)) return {ok:false,reason:'Add prostate volume'};
+    if(volume<=0||volume>300) return {ok:false,reason:'Volume must be 0\u2013300 mL'};
+    if(!(pb==='yes'||pb==='no')) return {ok:false,reason:'Set prior-biopsy status'};
+    const dreAb=dre==='abnormal'?1:0; const pbYes=pb==='yes'?1:0; const psaD=psa/volume; const binP=psaD>=0.15?1:0;
+    const bP={2:0,3:0.5102,4:1.3751,5:2.7627}[pr];
+    const lo=-4.6299+0.0547*age+0.0192*psa+0.8646*dreAb+(-0.6163)*pbYes+(-0.0179)*volume+0.8802*binP+bP;
+    return {ok:true,risk:this.logistic(lo)};
+  }
+
+  renderVals(){
+    const s=this.state;
+    const lc = Number(this.props.lowCut ?? 10);
+    const mc = Number(this.props.modCut ?? 40);
+    const age=parseFloat(s.age), psa=parseFloat(s.psa);
+    const volume=(s.volume===''||s.volume==null)?'':parseFloat(s.volume);
+    const res={
+      tum:this.computeTum(age,psa,volume,s.pirads,s.dre,s.priornegbiopsy),
+      spcc:this.computeSpcc(age,psa,volume,s.pirads,s.priornegbiopsy),
+      ucla:this.computeUcla(age,psa,volume,s.pirads,s.dre,s.priornegbiopsy)
+    };
+    const order=['tum','spcc','ucla'];
+    const cards=order.map(id=>{
+      const r=res[id], m=this.CALCS[id], open=!!s.open[id];
+      const base={id,short:m.short,name:m.name,place:m.place,description:m.description,excludes:m.excludes,notInTool:m.notInTool,link:m.link,uses:m.uses,open};
+      if(r.ok){ const pct=Math.round(r.risk*100); const cat=this.category(r.risk,lc,mc);
+        return Object.assign(base,{ok:true,notOk:false,pct,pctText:pct+'%',barWidth:Math.max(2,Math.min(100,pct)),cat});
+      }
+      return Object.assign(base,{ok:false,notOk:true,reason:r.reason});
+    });
+    const vals=cards.filter(c=>c.ok).map(c=>c.pct);
+    let combined={any:false};
+    if(vals.length){ const min=Math.min(...vals),max=Math.max(...vals),avg=Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+      combined={any:true,min,max,avg,avgText:avg+'%',barWidth:Math.max(2,Math.min(100,avg)),range:(min===max?min+'%':min+'\u2013'+max+'%'),count:vals.length,cat:this.category(avg/100,lc,mc)};
+    }
+    const t=this.PRIMARY;
+    const seg=(active)=> active
+      ? 'flex:1 1 0;min-width:52px;padding:11px 8px;border-radius:10px;border:1.5px solid '+t+';background:'+t+';color:#fff;font-family:Public Sans,sans-serif;font-weight:600;font-size:15px;cursor:pointer;text-align:center;line-height:1.1;transition:all .15s;'
+      : 'flex:1 1 0;min-width:52px;padding:11px 8px;border-radius:10px;border:1.5px solid #d7ddd9;background:#fff;color:#3a4250;font-family:Public Sans,sans-serif;font-weight:600;font-size:15px;cursor:pointer;text-align:center;line-height:1.1;transition:all .15s;';
+    const piradsOpts=['2','3','4','5'].map(v=>({v,label:v,style:seg(s.pirads===v)}));
+    const biopsyOpts=[['no','No'],['yes','Yes'],['unknown','Unknown']].map(a=>({v:a[0],label:a[1],style:seg(s.priornegbiopsy===a[0])}));
+    const dreOpts=[['abnormal','Abnormal'],['normal','Normal'],['unknown','Unknown']].map(a=>({v:a[0],label:a[1],style:seg(s.dre===a[0])}));
+    return {
+      age:s.age, psa:s.psa, volume:s.volume,
+      onAge:this.onAge, onPsa:this.onPsa, onVolume:this.onVolume,
+      pickPirads:this.pickPirads, pickBiopsy:this.pickBiopsy, pickDre:this.pickDre,
+      piradsOpts, biopsyOpts, dreOpts, toggleInfo:this.toggleInfo,
+      cards, combined, showMandatory: vals.length===0,
+      showDisclaimer: this.props.showDisclaimer ?? true
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -4,6 +4,10 @@ This repository contains the code and supporting materials for the paper: 'Estab
 
 The code for the [Shiny app](https://91mq7l-chernovaok.shinyapps.io/TUM-RC/) that accompanies the manuscript is in app.R
 
+# Web interface
+
+The redesigned web front-end of the TUM-RC calculator (Fig 4) is in the [`web/`](web/) folder and is live at https://oksana-pcrc.melihy.net. It computes the TUM-RC, SPCC, and PCRC-MRI risks client-side; see [`web/README.md`](web/README.md) for details.
+
 ## Web-Scraping: Execution Guide
 
 The code for the web-scraping is in the folder `Python`.
