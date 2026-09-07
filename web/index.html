@@ -127,6 +127,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
                 <sc-if value="{{ item.open }}">
                   <div style="margin-top:14px;padding-top:14px;border-top:1px solid #eef2f0;font-size:13.5px;line-height:1.6;color:#48534e;">
                     <div style="margin-bottom:8px;"><strong style="color:#2b3531;">Cohort:</strong> {{ item.description }}</div>
+                    <div style="margin-bottom:8px;"><strong style="color:#2b3531;">Includes:</strong> {{ item.includes }}</div>
                     <div style="margin-bottom:8px;"><strong style="color:#2b3531;">Excludes:</strong> {{ item.excludes }}</div>
                     <div style="margin-bottom:11px;"><strong style="color:#2b3531;">Not in tool:</strong> {{ item.notInTool }}</div>
                     <div style="display:flex;flex-wrap:wrap;gap:6px;">
@@ -175,9 +176,9 @@ class Component extends DCLogic {
     [-7.15298,0.03116,0.09626,1.46109,null,null,null]
   ];
   CALCS = {
-    tum:{short:'TUM-RC',name:'TUM Risk Calculator',place:'Munich, Germany',description:'67% csPCa across 1,333 biopsies, 75% PI-RADS 4\u20135, single institution in Munich, Germany.',excludes:'PI-RADS 1, prior PCa diagnosis, PSA \u2265 100 ng/mL',notInTool:'family history, race / ethnicity',link:null,uses:['Age','PSA','PI-RADS','Volume (opt.)','DRE (opt.)','Prior biopsy (opt.)']},
-    spcc:{short:'SPCC',name:'Stanford Prostate Cancer Calculator',place:'Stanford \u00b7 Yale \u00b7 Alabama, USA',description:'54% csPCa across 1,922 biopsies, 75% PI-RADS 4\u20135, multiple institutions in Stanford, Yale and Alabama, USA.',excludes:'PI-RADS 1 or 2',notInTool:'DRE, family history',link:'https://www.med.stanford.edu/ucil/nomogram.html',uses:['Age','PSA','PI-RADS 3\u20135','Volume','Prior biopsy']},
-    ucla:{short:'PCRC-MRI',name:'Prostate Cancer Risk Calculator \u2014 MRI',place:'Cornell, NY \u00b7 Los Angeles, CA',description:'40% csPCa across 2,354 biopsies, 52% PI-RADS 4\u20135, multiple institutions in Cornell, NY and Los Angeles, CA, USA.',excludes:'prior PCa diagnosis',notInTool:'family history',link:'https://www.uclahealth.org/departments/urology/iuo/research/prostate-cancer/risk-calculator-mri-guided-biopsy-pcrc-mri',uses:['Age','PSA','PI-RADS','Volume','DRE','Prior biopsy']}
+    tum:{short:'TUM-RC',name:'TUM Risk Calculator',place:'Munich, Germany',description:'67% csPCa across 1,333 biopsies, 75% PI-RADS 4\u20135, single institution in Munich, Germany.',includes:'4.4% PI-RADS 2',excludes:'PI-RADS 1, prior PCa diagnosis, PSA \u2265 100 ng/mL',notInTool:'family history, race / ethnicity',link:null,uses:['Age','PSA','PI-RADS','Volume (opt.)','DRE (opt.)','Prior biopsy (opt.)']},
+    spcc:{short:'SPCC',name:'Stanford Prostate Cancer Calculator',place:'Stanford \u00b7 Yale \u00b7 Alabama, USA',description:'54% csPCa across 1,922 biopsies, 75% PI-RADS 4\u20135, multiple institutions in Stanford, Yale and Alabama, USA.',includes:'active surveillance patients with a prior prostate cancer diagnosis',excludes:'PI-RADS 1 or 2',notInTool:'DRE, family history',link:'https://www.med.stanford.edu/ucil/nomogram.html',uses:['Age','PSA','PI-RADS 3\u20135','Volume','Prior biopsy']},
+    ucla:{short:'PCRC-MRI',name:'Prostate Cancer Risk Calculator \u2014 MRI',place:'Cornell, NY \u00b7 Los Angeles, CA',description:'40% csPCa across 2,354 biopsies, 52% PI-RADS 4\u20135, multiple institutions in Cornell, NY and Los Angeles, CA, USA.',includes:'19% PI-RADS 1, 2',excludes:'prior PCa diagnosis',notInTool:'family history',link:'https://www.uclahealth.org/departments/urology/iuo/research/prostate-cancer/risk-calculator-mri-guided-biopsy-pcrc-mri',uses:['Age','PSA','PI-RADS','Volume','DRE','Prior biopsy']}
   };
   PRIMARY = '#0c5c50';
   RISK = {
@@ -253,7 +254,7 @@ class Component extends DCLogic {
     const order=['tum','spcc','ucla'];
     const cards=order.map(id=>{
       const r=res[id], m=this.CALCS[id], open=!!s.open[id];
-      const base={id,short:m.short,name:m.name,place:m.place,description:m.description,excludes:m.excludes,notInTool:m.notInTool,link:m.link,uses:m.uses,open};
+      const base={id,short:m.short,name:m.name,place:m.place,description:m.description,includes:m.includes,excludes:m.excludes,notInTool:m.notInTool,link:m.link,uses:m.uses,open};
       if(r.ok){ const pct=Math.round(r.risk*100); const cat=this.category(r.risk,lc,mc);
         return Object.assign(base,{ok:true,notOk:false,pct,pctText:pct+'%',barWidth:Math.max(2,Math.min(100,pct)),cat});
       }
