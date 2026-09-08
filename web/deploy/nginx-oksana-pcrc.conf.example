@@ -1,0 +1,84 @@
+# Access gate: the password lives only here, never in the served page.
+# The /login page sets the cookie to whatever was typed; this map decides.
+map $cookie_tumrc $tumrc_ok {
+  default        0;
+  "CHANGE-ME"    1;
+}
+
+server {
+  listen 80;
+  listen [::]:80;
+  server_name oksana-pcrc.melihy.net;
+
+  location ^~ /.well-known/acme-challenge/ {
+    root /var/www/letsencrypt;
+    default_type "text/plain";
+    try_files $uri =404;
+  }
+
+  location / {
+    return 301 https://$host$request_uri;
+  }
+}
+
+server {
+  listen 443 ssl http2;
+  listen [::]:443 ssl http2;
+  server_name oksana-pcrc.melihy.net;
+
+  ssl_certificate /etc/letsencrypt/live/oksana-pcrc.melihy.net/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/oksana-pcrc.melihy.net/privkey.pem;
+  include /etc/letsencrypt/options-ssl-nginx.conf;
+  ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+  root /var/www/oksana-pcrc;
+  index index.html;
+
+  # Internal tool: keep it out of search engines.
+  add_header X-Robots-Tag "noindex, nofollow" always;
+
+  # Login page: always reachable, never cached.
+  location = /login {
+    try_files /login/index.html =404;
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    add_header Cache-Control "no-store" always;
+  }
+
+  # Fonts: needed by the login page itself, so served ungated.
+  location ^~ /fonts/ {
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    add_header Cache-Control "public, max-age=31536000, immutable" always;
+  }
+
+  location = /favicon.ico { access_log off; return 204; }
+
+  # HTML shell: always fresh so updates show immediately
+  location = / {
+    if ($tumrc_ok = 0) { return 302 /login; }
+    try_files /index.html =404;
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    add_header Cache-Control "no-store" always;
+  }
+  location = /index.html {
+    if ($tumrc_ok = 0) { return 302 /login; }
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    add_header Cache-Control "no-store" always;
+  }
+
+  # Runtime + vendored React: immutable, long cache
+  location = /support.js {
+    if ($tumrc_ok = 0) { return 302 /login; }
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    add_header Cache-Control "public, max-age=86400" always;
+  }
+  location ^~ /vendor/ {
+    if ($tumrc_ok = 0) { return 302 /login; }
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    add_header Cache-Control "public, max-age=31536000, immutable" always;
+  }
+
+  location / {
+    if ($tumrc_ok = 0) { return 302 /login; }
+    try_files $uri =404;
+  }
+}

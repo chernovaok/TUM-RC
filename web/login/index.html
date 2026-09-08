@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>TUM-RC risk tool</title>
+<!-- Fonts are self-hosted: no request leaves the browser to a third party. -->
+<style>
+@font-face{font-family:'Public Sans';font-style:normal;font-weight:400;font-display:swap;src:url(../fonts/public-sans-400-latin.woff2) format('woff2');}
+@font-face{font-family:'Public Sans';font-style:normal;font-weight:600;font-display:swap;src:url(../fonts/public-sans-600-latin.woff2) format('woff2');}
+@font-face{font-family:'Public Sans';font-style:normal;font-weight:700;font-display:swap;src:url(../fonts/public-sans-700-latin.woff2) format('woff2');}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:#eef2f0;font-family:'Public Sans',system-ui,sans-serif;color:#2b3531;padding:24px}
+.card{width:100%;max-width:400px;background:#fff;border-radius:14px;padding:32px;
+  box-shadow:0 1px 3px rgba(12,92,80,.08),0 8px 28px rgba(12,92,80,.10)}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#0c5c50;margin:0 0 6px}
+h1{font-size:21px;font-weight:700;margin:0 0 8px;line-height:1.25}
+.sub{font-size:13.5px;line-height:1.6;color:#48534e;margin:0 0 22px}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:7px}
+input{width:100%;padding:11px 13px;font-size:15px;font-family:inherit;color:#2b3531;
+  border:1px solid #d7dedb;border-radius:9px;background:#fbfcfc}
+input:focus{outline:none;border-color:#0c5c50;box-shadow:0 0 0 3px rgba(12,92,80,.13)}
+button{width:100%;margin-top:16px;padding:12px;font-size:15px;font-weight:600;font-family:inherit;
+  color:#fff;background:#0c5c50;border:0;border-radius:9px;cursor:pointer}
+button:hover{background:#0a4f45}
+.err{margin-top:14px;padding:10px 12px;border-radius:8px;background:#fdeceb;color:#a3261c;
+  font-size:13px;font-weight:600}
+.foot{margin-top:22px;padding-top:16px;border-top:1px solid #eef2f0;font-size:12px;line-height:1.6;color:#8a9591}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main class="card">
+  <p class="eyebrow">TUM Urology &middot; internal</p>
+  <h1>Prostate cancer risk tool</h1>
+  <p class="sub">This tool is for internal educational use at TUM. Please enter the access password.</p>
+
+  <form id="f" autocomplete="off">
+    <label for="pw">Password</label>
+    <input id="pw" name="pw" type="password" autocomplete="current-password" autofocus required>
+    <button type="submit">Open the tool</button>
+  </form>
+
+  <p class="err" id="err" hidden>That password was not correct. Please try again.</p>
+
+  <p class="foot">Educational use only, to illustrate how risk estimates vary between models.
+    Not a substitute for clinical judgement and not for use in patient counselling.</p>
+</main>
+
+<script>
+(function () {
+  var KEY = 'tumrc_attempted';
+
+  // If we were sent back here after submitting, the password was wrong.
+  try {
+    if (sessionStorage.getItem(KEY)) {
+      sessionStorage.removeItem(KEY);
+      document.getElementById('err').hidden = false;
+    }
+  } catch (e) {}
+
+  document.getElementById('f').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var pw = document.getElementById('pw').value;
+    if (!pw) return;
+    // The password is never checked here - nginx validates the cookie and sends
+    // us back to this page if it does not match.
+    document.cookie = 'tumrc=' + encodeURIComponent(pw) +
+      '; path=/; max-age=2592000; samesite=lax' +
+      (location.protocol === 'https:' ? '; secure' : '');
+    try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
+    location.href = '/';
+  });
+})();
+</script>
+</body>
+</html>
