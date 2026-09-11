@@ -719,5 +719,99 @@ rtum <- plot_risk_violin(
 
 # Figure Appendix 2 ----
 png(paste0(getwd(),"/Figures/FigAp2.png"), width = 11, height = 8.25, units = "in", res = 300)
-rba + rer + rny  + rucla + rstanford + rtum 
+rba + rer + rny  + rucla + rstanford 
+dev.off()
+
+# AUC ----
+library(pROC)
+# Helper function to compute AUC with 95% Confidence Intervals
+get_auc_info <- function(data, y_var, p_var, model_name = NULL) {
+  y_vec <- data[[deparse(substitute(y_var))]]
+  p_vec <- data[[deparse(substitute(p_var))]]
+  
+  if (is.null(model_name)) {
+    model_name <- deparse(substitute(p_var))
+  }
+  
+  # Calculate ROC object with CI
+  roc_obj <- pROC::roc(y_vec, p_vec, quiet = TRUE, ci = TRUE)
+  ci_vals <- roc_obj$ci
+  
+  tibble(
+    Model = model_name,
+    N = length(y_vec),
+    AUC = sprintf("%.3f", as.numeric(roc_obj$auc)),
+    `95% CI` = sprintf("(%.3f–%.3f)", ci_vals[1], ci_vals[3])
+  )
+}
+
+# calculate AUC with 95% CI                
+auc_summary <- bind_rows(
+  get_auc_info(risk_compl, csPCa2, `BCN2-RC`),
+  get_auc_info(risk_erspc, csPCa2, `ERSPC34-RC`),
+  get_auc_info(risk_compl, csPCa2, `MSP-RC`),
+  get_auc_info(risk_compl, csPCa2, `PCRC-MRI`),
+  get_auc_info(risk_spcc,  csPCa2, `SPCC`),
+  get_auc_info(risk_compl, csPCa2, `TUM-RC`)
+)
+
+print(auc_summary)
+
+auc_summary_ers <- bind_rows(
+  get_auc_info(risk_erspc, csPCa2, `BCN2-RC`),
+  get_auc_info(risk_erspc, csPCa2, `ERSPC34-RC`),
+  get_auc_info(risk_erspc, csPCa2, `MSP-RC`),
+  get_auc_info(risk_erspc, csPCa2, `PCRC-MRI`),
+  get_auc_info(risk_erspc,  csPCa2, `SPCC`),
+  get_auc_info(risk_erspc, csPCa2, `TUM-RC`)
+)
+
+print(auc_summary_ers)
+
+# Plotting Decision Curves -----                        
+library(dcurves)
+
+gdca <- dcurves::dca(
+  csPCa2 ~ `BCN2-RC` + `ERSPC34-RC` + `MSP-RC` + `PCRC-MRI` + `SPCC` ,
+  data = risk_erspc,
+  thresholds = seq(0, 1, by = 0.01)
+  ) |>
+  as_tibble() |>
+  filter(!is.na(net_benefit)) |>
+  ggplot(aes(
+    x        = threshold,
+    y        = net_benefit,
+    color    = label,
+    linetype = label,
+    size     = label
+  )) +
+  geom_line() +
+  ylim(-0.05, 0.8) +
+  scale_color_manual(values = c("black",  "black", "#009E73", "#56B4E9", "#E69F00", "magenta3", "brown4" )) +
+  scale_linetype_manual(values = c( "dashed", "solid", "solid", "solid", "solid", "solid", "solid")) +
+  scale_size_manual(values = c(1.5, 0.5, 1, 1, 1, 1, 1, 1)) +
+  labs(
+    x        = "Threshold Probability",
+    y        = "Net Benefit",
+    color    = "Model",
+    linetype = "Model",
+    size     = "Model"
+  ) +
+  theme(
+    axis.title.x = element_text(size = 16),
+    axis.text.x = element_text(size = 14),
+    axis.text.y = element_text(size = 14),
+    axis.title.y = element_text(size = 16))+
+  theme(legend.position = c(0.8, 0.7),
+        legend.title = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.key = element_blank(),
+        #legend.box.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.background = element_rect(colour = "black", fill=NA)
+  )
+
+png(paste0(getwd(),"/FigDCA.png"), width = 11, height = 8.25, units = "in", res = 300)
+gdca
 dev.off()
