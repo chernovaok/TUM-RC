@@ -67,7 +67,7 @@ f1 <- ggplot(datapirads, aes(x = factor(PIRADS), y = psa, fill = csPCa)) +
   )
 
 # Figure 1 ----
-png(paste0(getwd(),"/Figures/Fig11.png"), width = 11, height = 8.25, units = "in", res = 300) #, pointsize = 4
+png(paste0(getwd(),"/Figures/Fig11.png"), width = 170, height = 127.5, units = "mm", res = 300) #, pointsize = 4
 f1
 dev.off()
 
@@ -345,9 +345,9 @@ est_risk <- function(dsin) {
 risk_compl <- est_risk(data_filt)
 
 # Read web-scraping outputs ----
-risk_ny <- read.csv("C:/Users/ochernova/mydocs/calculator/web/msprc.csv")
-risk_bc <- read.csv("C:/Users/ochernova/mydocs/calculator/web/BCN2.csv")
-risk_er <- read.csv("C:/Users/ochernova/mydocs/calculator/web/ERSPC34.csv")
+risk_ny <- read.csv(paste0(getwd(),"/msprc.csv"))
+risk_bc <- read.csv(paste0(getwd(),"/BCN2.csv"))
+risk_er <- read.csv(paste0(getwd(),"/ERSPC34.csv"))
 
 risk_compl$`MSP-RC` <- risk_ny$cspca_risk
 risk_compl$`BCN2-RC` <- risk_bc$BCN2.RC/100
@@ -495,7 +495,7 @@ gtum <- plot_calibration_hist(
   title = "TUM-RC")
 
 # Figure 2 ----
-png(paste0(getwd(),"/Figures/Fig2.png"), width = 11, height = 8.25, units = "in", res = 300)
+png(paste0(getwd(),"/Fig2.png"), width = 170, height = 127.5, units = "mm", res = 300)
 gba + ger + gny + gucla + gstanford 
 dev.off()
 
@@ -584,7 +584,7 @@ p_tum_spcc <- plot_risk_comparison(
 )
 
 # Figure 3 ----
-png(paste0(getwd(),"/Figures/Fig3.png"), width = 11, height = 8.25, units = "in", res = 300) #, pointsize = 4
+png(paste0(getwd(),"/Fig3.png"), width = 170, height = 127.5, units = "mm", res = 300) #, pointsize = 4
 p_tum_ba + p_tum_er + p_tum_ny + p_tum_pcrc + p_tum_spcc 
 dev.off()
 
@@ -623,7 +623,7 @@ r = c(0,1)
 rsk <- risk_compl[,c("BCN2-RC", "ERSPC34-RC","MSP-RC", "PCRC-MRI", "SPCC", "TUM-RC", "csPCa")]
 
 # Figure Appendix 1 ----
-png(paste0(getwd(),"/Figures/FigAp1.png"), width = 11, height = 8.25, units = "in", res = 300)
+png(paste0(getwd(),"/FigAp1.png"), width = 170, height = 127.5, units = "mm", res = 300)
 pairs(rsk[,c("BCN2-RC", "ERSPC34-RC", "MSP-RC", "PCRC-MRI", "SPCC", "TUM-RC")],
       lower.panel = my_panel_smooth, 
       upper.panel = panel.cor, 
@@ -718,7 +718,7 @@ rtum <- plot_risk_violin(
 )
 
 # Figure Appendix 2 ----
-png(paste0(getwd(),"/Figures/FigAp2.png"), width = 11, height = 8.25, units = "in", res = 300)
+png(paste0(getwd(),"/FigAp2.png"), width = 170, height = 127.5, units = "mm", res = 300)
 rba + rer + rny  + rucla + rstanford 
 dev.off()
 
@@ -802,16 +802,18 @@ gdca <- dcurves::dca(
     axis.text.x = element_text(size = 14),
     axis.text.y = element_text(size = 14),
     axis.title.y = element_text(size = 16))+
-  theme(legend.position = c(0.8, 0.7),
-        legend.title = element_blank(),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        legend.key = element_blank(),
-        #legend.box.background = element_blank(),
-        axis.line = element_line(colour = "black"),
-        panel.background = element_rect(colour = "black", fill=NA)
+  theme(
+    legend.position = "none",
+    #legend.position = c(0.8, 0.7),
+    legend.title = element_blank(),
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    legend.key = element_blank(),
+    #legend.box.background = element_blank(),
+    axis.line = element_line(colour = "black"),
+    panel.background = element_rect(colour = "black", fill=NA)
   )
 
-png(paste0(getwd(),"/FigDCA.png"), width = 11, height = 8.25, units = "in", res = 300)
+png(paste0(getwd(),"/FigDCA.png"), width = 170, height = 127.5, units = "mm", res = 300)
 gdca
 dev.off()
