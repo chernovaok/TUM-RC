@@ -1,8 +1,5 @@
-This repository contains the code and supporting materials for the paper: 'Establishing an automated Cross-Platform Evaluation of Patients Prostate Cancer Risk: Leveraging Local German Hospital Data'. Includes web-scraping scripts, data processing pipelines, and the interactive R Shiny application.
-
-# Shiny app
-
-The code for the [Shiny app](https://91mq7l-chernovaok.shinyapps.io/TUM-RC/) that accompanies the manuscript is in app.R
+This repository contains the code and supporting materials for the paper: 'A cross-platform evaluation of the accuracy and clinical utility
+of MRI-based prostate cancer risk calculators using local clinical data'. Includes web-scraping scripts, data processing pipelines, and the interactive web interface.
 
 # Web interface
 
@@ -42,13 +39,18 @@ For SPCC
 python spcc.py sample_inputs.csv spcc_output.csv
 ```
 
+# Shiny app
+
+The code for the [Shiny app](https://91mq7l-chernovaok.shinyapps.io/TUM-RC/) that accompanies the manuscript is in app.R
+
 # Software versions
 
 We used R version 4.5.2 and the following R package versions:
 
 ```         
 pmcalibration_0.2.0 patchwork_1.3.2     ggExtra_0.11.0     
-ggplot2_4.0.1       dplyr_1.1.4         openxlsx_4.2.8.1 
+ggplot2_4.0.1       dplyr_1.1.4         openxlsx_4.2.8.1
+dcurves_0.5.1       pROC_1.19.1
 ```
 
 Additionally, to perform web-scraping we used Python version 3.8.
