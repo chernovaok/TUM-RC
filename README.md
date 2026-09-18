@@ -3,7 +3,7 @@ of MRI-based prostate cancer risk calculators using local clinical data'. Includ
 
 # Web interface
 
-The redesigned web front-end of the TUM-RC calculator (Fig 4) is in the [`web/`](web/) folder and is live at https://oksana-pcrc.melihy.net. It computes the TUM-RC, SPCC, and PCRC-MRI risks client-side; see [`web/README.md`](web/README.md) for details.
+The redesigned web front-end of the TUM-RC calculator (Fig 3) is in the [`web/`](web/) folder and is live at https://oksana-pcrc.melihy.net. It computes the TUM-RC, SPCC, and PCRC-MRI risks client-side; see [`web/README.md`](web/README.md) for details.
 
 ## Web-Scraping: Execution Guide
 
