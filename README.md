@@ -1,6 +1,11 @@
 This repository contains the code and supporting materials for the paper: 'A cross-platform evaluation of the accuracy and clinical utility
 of MRI-based prostate cancer risk calculators using local clinical data'. Includes web-scraping scripts, data processing pipelines, and the interactive web interface.
 
+# File Overview
+* model_development.Rmd: An R Markdown script that handles data preprocessing and model development, including multiple imputation and table generation.
+* model_coefficients.Rmd: R Markdown script for estimating model coefficients across different missing variable patterns.
+* figure.R: R script for generating all figures included in the manuscript.
+
 # Web interface
 
 The redesigned web front-end of the TUM-RC calculator (Fig 3) is in the [`web/`](web/) folder and is live at https://oksana-pcrc.melihy.net. It computes the TUM-RC, SPCC, and PCRC-MRI risks client-side; see [`web/README.md`](web/README.md) for details.
