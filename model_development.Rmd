@@ -25,7 +25,7 @@ library(gtsummary)
 # Read excel sheet
 ```{r }
 # Set working directory
-setwd("//nas.ads.mwn.de/tuma/m12/Projects/TUM MRI biopsy")
+# setwd()
 
 data <- read.xlsx(paste0(getwd(),"/Biopsien.Update.21.01.2026.xlsx")
                   ,sheet = "Tabelle1 (cleaned)"
@@ -127,6 +127,11 @@ data <- data %>%
            ISUP < 2 ~ "ISUP<2",
            ISUP == 2 ~ "ISUP=2",
            ISUP > 2 ~ "ISUP>2",
+           TRUE ~ NA),
+         ISUPcatn = case_when(
+           ISUP == 0 ~ "ISUP=0",
+           ISUP == 1 ~ "ISUP=1",
+           ISUP >= 2 ~ "ISUP>=2",
            TRUE ~ NA),
          csPCa = factor(ifelse(ISUP >= 2, "csPCa", "non-csPCa"), 
                         levels = c("non-csPCa", "csPCa"))
@@ -279,7 +284,6 @@ data |>
 # )
 ```
 
-# Table appendix
 ```{r }
 validata <- data |> mutate(
   valcompl = case_when( 
@@ -302,7 +306,7 @@ validata <- data |> mutate(
     )
 
 ```
-
+# Table appendix ----
 # TUM-RC, PCRC-MRI, MSP-RC, BCN2-RC validation sample
 ```{r }
 validata |> 
