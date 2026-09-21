@@ -279,6 +279,158 @@ data |>
 # )
 ```
 
+# Table appendix
+```{r }
+validata <- data |> mutate(
+  valcompl = case_when( 
+    !is.na(DRE) & !is.na(Volume) & !is.na(PIRADS)
+         & !is.na(Prior_neg_biopsy) & !is.na(Prior_neg_biopsy) ~ 1,
+    TRUE ~ 2
+      )) |> 
+    mutate(
+      valspcc = case_when(
+        valcompl == 1 & PIRADS != "2" ~ 1,
+        TRUE ~ 2
+      ),
+      valerspc = case_when(
+        valcompl == 1 & 
+          Age >=50 & Age <= 75 &
+          Volume >=10 & Volume <=  110 &
+          PSA >=0.4 & PSA<= 50 ~ 1,
+        TRUE ~ 2
+      )
+    )
+
+```
+
+# TUM-RC, PCRC-MRI, MSP-RC, BCN2-RC validation sample
+```{r }
+validata |> 
+  group_by(valcompl) |> 
+  tbl_summary( 
+    by = valcompl, 
+    include = c(Age, 
+                PSA, 
+                PIRADS,
+                Volume,
+                DRE, 
+                Prior_neg_biopsy, 
+                Biopsy_type,
+                Biopsy_method,
+                Cores, 
+                ISUPcatn
+    ),
+    missing = "ifany",
+    missing_text = "Missing",
+    percent = "column",
+    label = list(
+      Age_cat = "Age (years)",
+      PSA_cat = "PSA",
+      Prior_cancer = "Prior Cancer",
+      Prior_neg_biopsy = "Prior negative biopsy",
+      Biopsy_method = "Biopsy method",
+      Biopsy_type = "Biopsy type",
+      PIRADScat2 = "PIRADS category",
+      Systematic_cores_taken = "Systematic cores",
+      Target_cores_taken = "Target cores"
+    ),
+    type = all_continuous() ~ "continuous2", # Change to multi-line summary
+    statistic = list(
+      all_continuous() ~ c(
+        "{median} ({p25}, {p75})", # First row
+        "({min}, {max})"           # Second row (Min, Max)
+      )
+    )
+  )|>
+  # Add the P-value column last
+  add_p() 
+```
+
+# SPCC validation sample (PIRADS 2 removed)      
+```{r }
+validata |> 
+  group_by(valspcc) |> 
+  tbl_summary( 
+    by = valspcc, 
+    include = c(Age, 
+                PSA, 
+                PIRADS,
+                Volume,
+                DRE, 
+                Prior_neg_biopsy, 
+                Biopsy_type,
+                Biopsy_method,
+                Cores, 
+                ISUPcatn
+    ),
+    missing_text = "Missing",
+    label = list(
+      Age_cat = "Age (years)",
+      PSA_cat = "PSA",
+      Prior_cancer = "Prior Cancer",
+      Prior_neg_biopsy = "Prior negative biopsy",
+      Biopsy_method = "Biopsy method",
+      Biopsy_type = "Biopsy type",
+      PIRADScat2 = "PIRADS category",
+      Systematic_cores_taken = "Systematic cores",
+      Target_cores_taken = "Target cores"
+    ),
+    type = all_continuous() ~ "continuous2", # Change to multi-line summary
+    statistic = list(
+      all_continuous() ~ c(
+        "{median} ({p25}, {p75})", # First row
+        "({min}, {max})"           # Second row (Min, Max)
+      )
+    )
+  )|>
+  # Add the P-value column last
+  add_p() 
+```
+
+# ERSPC34-RC validation sample
+```{r }
+validata |> 
+  group_by(valerspc) |> 
+  tbl_summary( 
+    by = valerspc, 
+    include = c(Age, 
+                PSA, 
+                PIRADS,
+                Volume,
+                DRE, 
+                Prior_neg_biopsy, 
+                Biopsy_type,
+                Biopsy_method,
+                Cores, 
+                #csPCa,
+                ISUPcatn
+    ),
+    missing = "ifany",
+    missing_text = "Missing",
+    percent = "column",
+    label = list(
+      Age_cat = "Age (years)",
+      PSA_cat = "PSA",
+      Prior_cancer = "Prior Cancer",
+      Prior_neg_biopsy = "Prior negative biopsy",
+      Biopsy_method = "Biopsy method",
+      Biopsy_type = "Biopsy type",
+      PIRADScat2 = "PIRADS category",
+      Systematic_cores_taken = "Systematic cores",
+      Target_cores_taken = "Target cores"
+    ),
+    type = all_continuous() ~ "continuous2", # Change to multi-line summary
+    statistic = list(
+      all_continuous() ~ c(
+        "{median} ({p25}, {p75})", # First row
+        "({min}, {max})"           # Second row (Min, Max)
+      )
+    )
+  )|>
+  # Add the P-value column last
+  add_p() 
+```
+
 # Fit logistic regression for complete cases 
 ```{r }
 data_filt <- data %>%
