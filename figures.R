@@ -56,10 +56,10 @@ f1 <- ggplot(datapirads, aes(x = factor(PIRADS), y = psa, fill = csPCa)) +
   scale_x_discrete(labels = paste0(datapi_summary$PIRADScat, "\n(n = ", datapi_summary$count, ")"))+
   scale_fill_manual(values = c("csPCa" = "red3", "non-csPCa" = "greenyellow"))+
   theme(
-    axis.title.x = element_text(size = 16),
-    axis.text.x = element_text(size = 14),
-    axis.text.y = element_text(size = 14),
-    axis.title.y = element_text(size = 16))+
+    axis.title.x = element_text(size = 10),
+    axis.text.x = element_text(size = 8),
+    axis.text.y = element_text(size = 8),
+    axis.title.y = element_text(size = 10))+
   theme(legend.position = "none",
         panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         axis.line = element_line(colour = "black"),
@@ -67,7 +67,7 @@ f1 <- ggplot(datapirads, aes(x = factor(PIRADS), y = psa, fill = csPCa)) +
   )
 
 # Figure 1 ----
-png(paste0(getwd(),"/Figures/Fig11.png"), width = 170, height = 127.5, units = "mm", res = 300) #, pointsize = 4
+png(paste0(getwd(),"/Figure1.png"), width = 170, height = 127.5, units = "mm", res = 300) #, pointsize = 4
 f1
 dev.off()
 
@@ -445,10 +445,10 @@ plot_calibration_hist <- function(cal_data, hist_data = risk_compl, x_hist,
       fill = "grey"
     )+
     theme(
-      axis.title.x = element_text(size = 16),
-      axis.text.x = element_text(size = 14),
-      axis.text.y = element_text(size = 14),
-      axis.title.y = element_text(size = 16))+
+      axis.title.x = element_text(size = 10),
+      axis.text.x = element_text(size = 8),
+      axis.text.y = element_text(size = 8),
+      axis.title.y = element_text(size = 10))+
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           axis.line = element_line(colour = "black"),
           panel.background = element_rect(colour = "black", fill=NA))
@@ -495,8 +495,8 @@ gtum <- plot_calibration_hist(
   title = "TUM-RC")
 
 # Figure 2 ----
-png(paste0(getwd(),"/Fig2.png"), width = 170, height = 127.5, units = "mm", res = 300)
-gba + ger + gny + gucla + gstanford 
+png(paste0(getwd(),"/Figure2.png"), width = 170, height = 127.5, units = "mm", res = 300)
+(gba + ger + gny + gucla + gstanford) & theme(plot.title = element_text(size = 10))
 dev.off()
 
 # Risk comparison TUM vs others ----
@@ -529,10 +529,10 @@ plot_risk_comparison <- function(data, x_var, y_var, color_var = csPCa,
          y = titley
          ) +
     theme(
-      axis.title.x = element_text(size = 16),
-      axis.text.x = element_text(size = 14),
-      axis.text.y = element_text(size = 14),
-      axis.title.y = element_text(size = 16))+
+      axis.title.x = element_text(size = 10),
+      axis.text.x = element_text(size = 8),
+      axis.text.y = element_text(size = 8),
+      axis.title.y = element_text(size = 10))+
     theme(
       legend.position = "none",
       legend.justification = c("left", "top"),
@@ -584,57 +584,12 @@ p_tum_spcc <- plot_risk_comparison(
 )
 
 # Figure 3 ----
-png(paste0(getwd(),"/Fig3.png"), width = 170, height = 127.5, units = "mm", res = 300) #, pointsize = 4
-p_tum_ba + p_tum_er + p_tum_ny + p_tum_pcrc + p_tum_spcc 
-dev.off()
+#png(paste0(getwd(),"/Fig3.png"), width = 170, height = 127.5, units = "mm", res = 300) #, pointsize = 4
+#p_tum_ba + p_tum_er + p_tum_ny + p_tum_pcrc + p_tum_spcc 
+#dev.off()
 
 
 # Appendix ----
-# Panel plot, Spearman correlation
-panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) { 
-  usr <- par("usr"); 
-  on.exit(par(usr = usr))
-  par(usr = c(0, 1, 0, 1)) 
-  r <- cor(x, y, method = "spearman", use = "complete.obs") 
-  txt <- format(c(r, 0.123456789), digits = digits)[1] 
-  txt <- paste0(prefix, txt) 
-  if(missing(cex.cor)) 
-    cex.cor <- 0.8/strwidth(txt) 
-  text(0.5, 0.5, txt, cex = cex.cor * r) 
-} 
-
-panel.d <- function(x,...) { 
-  usr <- par("usr") 
-  on.exit(par(usr = usr))
-  par(usr=c(usr[1:2],0,5)) 
-  #hist(x)
-  lines(density(x, na.rm = T), col="palevioletred",lwd=2) 
-} 
-
-my_panel_smooth <- function(x, y, ...) {
-  panel.smooth(x, y, 
-               col.smooth = "black", # Line color
-               #lwd = 2,             # Line thickness
-               lty = 1,              # Line type (1=solid, 2=dashed)
-               ...)
-}
-r = c(0,1)
-
-rsk <- risk_compl[,c("BCN2-RC", "ERSPC34-RC","MSP-RC", "PCRC-MRI", "SPCC", "TUM-RC", "csPCa")]
-
-# Figure Appendix 1 ----
-png(paste0(getwd(),"/FigAp1.png"), width = 170, height = 127.5, units = "mm", res = 300)
-pairs(rsk[,c("BCN2-RC", "ERSPC34-RC", "MSP-RC", "PCRC-MRI", "SPCC", "TUM-RC")],
-      lower.panel = my_panel_smooth, 
-      upper.panel = panel.cor, 
-      gap=0, 
-      row1attop=FALSE,
-      pch=21,
-      bg = ifelse(rsk$csPCa == "non-csPCa", "greenyellow", "red3"),
-      diag.panel = panel.d
-)
-dev.off()
-
 # Violin plots ----
 # R function for violin-boxplot combination
 plot_risk_violin <- function(data, y_var, x_var = csPCa, title = "",
@@ -658,10 +613,10 @@ plot_risk_violin <- function(data, y_var, x_var = csPCa, title = "",
     ) +
     scale_y_continuous(labels = function(x) paste0(x * 100))+
     theme(
-      axis.title.x = element_text(size = 16),
-      axis.text.x = element_text(size = 14),
-      axis.text.y = element_text(size = 14),
-      axis.title.y = element_text(size = 16))+
+      axis.title.x = element_text(size = 10),
+      axis.text.x = element_text(size = 8),
+      axis.text.y = element_text(size = 8),
+      axis.title.y = element_text(size = 10))+
     # D. Theme adjustments
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           axis.line = element_line(colour = "black"),
@@ -717,9 +672,9 @@ rtum <- plot_risk_violin(
   title = "TUM-RC"
 )
 
-# Figure Appendix 2 ----
-png(paste0(getwd(),"/FigAp2.png"), width = 170, height = 127.5, units = "mm", res = 300)
-rba + rer + rny  + rucla + rstanford 
+# Figure Appendix 1 ----
+png(paste0(getwd(),"/SuppFigure1.png"), width = 170, height = 127.5, units = "mm", res = 300)
+(rba + rer + rny  + rucla + rstanford ) & theme(plot.title = element_text(size = 10))
 dev.off()
 
 # AUC ----
@@ -798,10 +753,10 @@ gdca <- dcurves::dca(
     size     = "Model"
   ) +
   theme(
-    axis.title.x = element_text(size = 16),
-    axis.text.x = element_text(size = 14),
-    axis.text.y = element_text(size = 14),
-    axis.title.y = element_text(size = 16))+
+    axis.title.x = element_text(size = 10),
+    axis.text.x = element_text(size = 8),
+    axis.text.y = element_text(size = 8),
+    axis.title.y = element_text(size = 10))+
   theme(
     legend.position = "none",
     #legend.position = c(0.8, 0.7),
@@ -813,7 +768,53 @@ gdca <- dcurves::dca(
     axis.line = element_line(colour = "black"),
     panel.background = element_rect(colour = "black", fill=NA)
   )
-
-png(paste0(getwd(),"/FigDCA.png"), width = 170, height = 127.5, units = "mm", res = 300)
+# Figure Appendix 2 ----
+png(paste0(getwd(),"/SuppFigure2.png"), width = 170, height = 127.5, units = "mm", res = 300)
 gdca
 dev.off()
+
+# Panel plot, Spearman correlation if needed
+# panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...) { 
+#   usr <- par("usr"); 
+#   on.exit(par(usr = usr))
+#   par(usr = c(0, 1, 0, 1)) 
+#   r <- cor(x, y, method = "spearman", use = "complete.obs") 
+#   txt <- format(c(r, 0.123456789), digits = digits)[1] 
+#   txt <- paste0(prefix, txt) 
+#   if(missing(cex.cor)) 
+#     cex.cor <- 0.8/strwidth(txt) 
+#   text(0.5, 0.5, txt, cex = cex.cor * r) 
+# } 
+# 
+# panel.d <- function(x,...) { 
+#   usr <- par("usr") 
+#   on.exit(par(usr = usr))
+#   par(usr=c(usr[1:2],0,5)) 
+#   #hist(x)
+#   lines(density(x, na.rm = T), col="palevioletred",lwd=2) 
+# } 
+# 
+# my_panel_smooth <- function(x, y, ...) {
+#   panel.smooth(x, y, 
+#                col.smooth = "black", # Line color
+#                #lwd = 2,             # Line thickness
+#                lty = 1,              # Line type (1=solid, 2=dashed)
+#                ...)
+# }
+# r = c(0,1)
+# 
+# rsk <- risk_compl[,c("BCN2-RC", "ERSPC34-RC","MSP-RC", "PCRC-MRI", "SPCC", "TUM-RC", "csPCa")]
+
+# Figure Appendix  ----
+# png(paste0(getwd(),"/SuppFigure3.png"), width = 170, height = 127.5, units = "mm", res = 300)
+# pairs(rsk[,c("BCN2-RC", "ERSPC34-RC", "MSP-RC", "PCRC-MRI", "SPCC", "TUM-RC")],
+#       lower.panel = my_panel_smooth, 
+#       upper.panel = panel.cor, 
+#       gap=0, 
+#       row1attop=FALSE,
+#       pch=21,
+#       bg = ifelse(rsk$csPCa == "non-csPCa", "greenyellow", "red3"),
+#       diag.panel = panel.d
+# )
+# dev.off()                       
+                       
