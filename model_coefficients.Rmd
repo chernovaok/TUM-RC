@@ -20,10 +20,10 @@ library(knitr)
 library(dplyr) 
 library(tidyr)
 library(stringr)
+library(fmtr)
 ```
 
 ```{r  echo=FALSE, results = 'hide'}
-library(fmtr)
 # Create formatting list
 formatnames <- flist(char = value(condition(x == "age", "Age"),
                                   condition(x == "(Intercept)", "Intercept"),
@@ -60,7 +60,7 @@ sumreg <- function(rg){
 
 # Read data
 ```{r}
-data <- read.csv("C:/Users/ochernova/mydocs/pr2/MRIbiopsy21.01.2026.csv")  
+data <- read.csv(paste0(getwd(),"/MRIbiopsy21.01.2026.csv"))  
 
 dim(data) 
 
