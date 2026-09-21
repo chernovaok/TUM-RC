@@ -2,7 +2,7 @@ This repository contains the code and supporting materials for the paper: 'A cro
 of MRI-based prostate cancer risk calculators using local clinical data'. Includes web-scraping scripts, data processing pipelines, and the interactive web interface.
 
 # File Overview
-* model_development.Rmd: An R Markdown script that handles data preprocessing and model development, including multiple imputation and table generation.
+* model_development.Rmd: R Markdown script that handles data preprocessing and model development, including multiple imputation and table generation.
 * model_coefficients.Rmd: R Markdown script for estimating model coefficients across different missing variable patterns.
 * figure.R: R script for generating all figures included in the manuscript.
 
