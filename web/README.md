@@ -2,8 +2,8 @@
 
 Redesigned web front-end for the TUM Risk Calculator, corresponding to **Fig 4
 (TUM-RC model and output)** in the manuscript. It presents the risk of
-clinically significant prostate cancer (ISUP ≥ 2) from three externally
-validated models side by side:
+clinically significant prostate cancer (ISUP ≥ 2) from three risk
+calculators side by side:
 
 - **TUM-RC** — TUM Risk Calculator (this study)
 - **SPCC** — Stanford Prostate Cancer Calculator
