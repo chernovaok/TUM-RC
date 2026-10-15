@@ -726,51 +726,91 @@ print(auc_summary_ers)
 # Plotting Decision Curves -----                        
 library(dcurves)
 
-gdca <- dcurves::dca(
-  csPCa2 ~ `BCN2-RC` + `ERSPC34-RC` + `MSP-RC` + `PCRC-MRI` + `SPCC` ,
-  data = risk_erspc,
-  thresholds = seq(0, 1, by = 0.01)
+# 1. Define the reusable function
+plot_dca <- function(data, var_name, outcome = "csPCa2", titley = "Net Benefit (%)") {
+  # Build formula dynamically: outcome ~ `var_name`
+  #fml <- as.formula(paste0(csPCa2, " ~ ", var_name))
+  fml <- reformulate(termlabels = sprintf("`%s`", var_name), response = outcome)
+  
+  dcurves::dca(
+    formula    = fml,
+    data       = data,
+    thresholds = seq(0, 0.99, by = 0.01)
   ) |>
-  as_tibble() |>
-  filter(!is.na(net_benefit)) |>
-  ggplot(aes(
-    x        = threshold,
-    y        = net_benefit,
-    color    = label,
-    linetype = label,
-    size     = label
-  )) +
-  geom_line() +
-  ylim(-0.05, 0.8) +
-  scale_color_manual(values = c("black",  "black", "#009E73", "#56B4E9", "#E69F00", "magenta3", "brown4" )) +
-  scale_linetype_manual(values = c( "dashed", "solid", "solid", "solid", "solid", "solid", "solid")) +
-  scale_size_manual(values = c(1.5, 0.5, 1, 1, 1, 1, 1, 1)) +
-  labs(
-    x        = "Threshold Probability",
-    y        = "Net Benefit",
-    color    = "Model",
-    linetype = "Model",
-    size     = "Model"
-  ) +
-  theme(
-    axis.title.x = element_text(size = 10),
-    axis.text.x = element_text(size = 8),
-    axis.text.y = element_text(size = 8),
-    axis.title.y = element_text(size = 10))+
-  theme(
-    legend.position = "none",
-    #legend.position = c(0.8, 0.7),
-    legend.title = element_blank(),
-    panel.grid.major = element_blank(), 
-    panel.grid.minor = element_blank(),
-    legend.key = element_blank(),
-    #legend.box.background = element_blank(),
-    axis.line = element_line(colour = "black"),
-    panel.background = element_rect(colour = "black", fill=NA)
-  )
-# Figure Appendix 2 ----
+    as_tibble() |>
+    filter(!is.na(net_benefit)) |>
+    ggplot(aes(
+      x        = threshold,
+      y        = net_benefit,
+      color    = label,
+      linetype = label,
+      size     = label
+    )) +
+    geom_line() +
+    coord_cartesian(ylim = c(-0.05, 0.75), xlim = c(0,1))+
+    scale_color_manual(values = c("black",  "black", "lightblue"))+
+    scale_linetype_manual(values = c( "dashed", "solid", "solid"))+
+    scale_size_manual(values = c(1, 0.5, 1))+ 
+    #coord_cartesian(xlim = c(0, 1), ylim = c(0, 1)) +
+    #scale_y_continuous(labels = function(x) paste0(x * 100, "%"))+
+    scale_y_continuous(breaks = c(0, 0.25, 0.50, 0.75),
+                       labels = function(x) paste0(x * 100))+
+    scale_x_continuous(labels = function(x) paste0(x * 100))+
+    # scale_x_continuous(
+    #   limits = c(0, 1),
+    #   breaks = c(0, 0.25, 0.50, 0.75, 1),
+    #   labels = c("0", "0.25", "0.50", "0.75", "1")#,
+    #   #expand = c(0, 0) # Removes padding between data and axes if desired
+    # )+
+    labs(
+      title    = var_name, #paste("DCA for", var_name),
+      x        = "Threshold Probability (%)",
+      y        = titley,
+      color    = "Model",
+      linetype = "Model",
+      size     = "Model"
+    ) +
+    theme(
+      axis.title.x = element_text(size = 10),
+      axis.text.x  = element_text(size = 8),
+      axis.text.y  = element_text(size = 8),
+      axis.title.y = element_text(size = 10),
+      legend.position   = "none",
+      legend.title      = element_blank(),
+      panel.grid.major  = element_blank(), 
+      panel.grid.minor  = element_blank(),
+      legend.key        = element_blank(),
+      axis.line         = element_line(colour = "black"),
+      panel.background  = element_rect(colour = "black", fill = NA)
+    )
+}
+
+dc_ba <- plot_dca(
+  data = risk_compl, 
+  var_name = "BCN2-RC" 
+)
+
+dc_er <- plot_dca(
+  data = risk_erspc, 
+  titley = "",
+  var_name = "ERSPC34-RC")
+
+dc_ny <- plot_dca(
+  data = risk_compl, 
+  titley = "",
+  var_name = "MSP-RC")
+
+dc_ucla <- plot_dca(
+  data = risk_compl, 
+  var_name = "PCRC-MRI")
+
+dc_stanford <- plot_dca(
+  data = risk_spcc, 
+  titley = "",
+  var_name = "SPCC")
+
 png(paste0(getwd(),"/SuppFigure2.png"), width = 170, height = 127.5, units = "mm", res = 300)
-gdca
+(dc_ba + dc_er + dc_ny + dc_ucla + dc_stanford) & theme(plot.title = element_text(size = 10))
 dev.off()
 
 # Panel plot, Spearman correlation if needed
