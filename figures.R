@@ -785,27 +785,30 @@ plot_dca <- function(data, var_name, outcome = "csPCa2", titley = "Net Benefit (
     )
 }
 
+# Common eligible population                       
+risk_common <- risk_compl |> filter(!is.na(`SPCC`) & !is.na(`ERSPC34-RC`))
+                       
 dc_ba <- plot_dca(
-  data = risk_compl, 
+  data = risk_common, 
   var_name = "BCN2-RC" 
 )
 
 dc_er <- plot_dca(
-  data = risk_erspc, 
+  data = risk_common, 
   titley = "",
   var_name = "ERSPC34-RC")
 
 dc_ny <- plot_dca(
-  data = risk_compl, 
+  data = risk_common, 
   titley = "",
   var_name = "MSP-RC")
 
 dc_ucla <- plot_dca(
-  data = risk_compl, 
+  data = risk_common, 
   var_name = "PCRC-MRI")
 
 dc_stanford <- plot_dca(
-  data = risk_spcc, 
+  data = risk_common, 
   titley = "",
   var_name = "SPCC")
 
