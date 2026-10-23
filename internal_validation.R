@@ -5,6 +5,7 @@ library(openxlsx)
 library(dplyr)
 library(pROC)
 library(dplyr)
+library(caret)
 
 # Read data ----
 data <- read.csv(paste0(getwd(),"/MRIbiopsy21.01.2026.csv"))                 
