@@ -95,9 +95,6 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
           <sc-if value="{{ showMandatory }}">
             <div style="background:#fef6e7;border:1px solid #f0dcae;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13.5px;color:#8a6d1f;font-weight:600;">Age, PSA and a PI-RADS score are required to calculate risk.</div>
           </sc-if>
-          <sc-if value="{{ spread.any }}">
-            <p style="margin:0 0 14px;font-size:14px;color:#5d6b66;line-height:1.5;">{{ spread.text }}</p>
-          </sc-if>
           <div style="display:flex;flex-direction:column;gap:16px;">
             <sc-for list="{{ cards }}" as="item" hint-placeholder-count="3">
               <article style="background:#fff;border:1px solid #e0e7e3;border-radius:16px;padding:20px 22px;box-shadow:0 2px 4px rgba(15,40,32,.04);">
@@ -260,12 +257,6 @@ class Component extends DCLogic {
       return Object.assign(base,{ok:false,notOk:true,reason:r.reason});
     });
     const vals=cards.filter(c=>c.ok).map(c=>c.pct);
-    let spread={any:false};
-    if(vals.length){ const min=Math.min(...vals),max=Math.max(...vals),n=vals.length;
-      const label=n+' applicable model'+(n===1?'':'s');
-      const rng=n===1?min+'%':(min===max?(n===2?'both':'all')+' estimates '+min+'%':'estimates range from '+min+'% to '+max+'%');
-      spread={any:true,text:label+' \u00b7 '+rng};
-    }
     const t=this.PRIMARY;
     const seg=(active)=> active
       ? 'flex:1 1 0;min-width:52px;padding:11px 8px;border-radius:10px;border:1.5px solid '+t+';background:'+t+';color:#fff;font-family:Public Sans,sans-serif;font-weight:600;font-size:15px;cursor:pointer;text-align:center;line-height:1.1;transition:all .15s;'
@@ -278,7 +269,7 @@ class Component extends DCLogic {
       onAge:this.onAge, onPsa:this.onPsa, onVolume:this.onVolume,
       pickPirads:this.pickPirads, pickBiopsy:this.pickBiopsy, pickDre:this.pickDre,
       piradsOpts, biopsyOpts, dreOpts, toggleInfo:this.toggleInfo,
-      cards, spread, showMandatory: vals.length===0,
+      cards, showMandatory: vals.length===0,
       showDisclaimer: this.props.showDisclaimer ?? true
     };
   }
