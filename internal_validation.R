@@ -319,89 +319,184 @@ data_comp <- risk_compl |> mutate(
   priornegbiopsy = relevel(factor(priornegbiopsy), ref="no")
 )
 
-model1 <- glm(formula = csPCa2 ~ age + log2_psa + pirads + log2_vol + dre + priornegbiopsy,
-              data = data_comp,
-              family=binomial(link='logit'))
-summary(model1)
-round(exp(model1$coefficients), 2)
-
-
-# Internal validation using stratified bootstrap -----
+# Internal validation ---------------------------------------------------------
 set.seed(123) # Set seed for reproducibility
-B <- 1000     # Number of bootstrap iterations
+# ------------------------------------------------------------------------------
+# STEP 1: Assign Stratified 5-Fold Split
+# ------------------------------------------------------------------------------
+# Stratify based on csPCa2 outcome to maintain balanced cases across folds
+data_comp$cv_group <- createFolds(data_comp$csPCa2, k = 5, list = FALSE)
 
-# 1. Separate case and control indices
-case_indices    <- which(data_comp$csPCa2 == 1)
-control_indices <- which(data_comp$csPCa2 == 0)
-
-n_cases    <- length(case_indices)
-n_controls <- length(control_indices)
-
-# Vectors to store metrics across iterations
-auc_vec_tum <- numeric(B)
-auc_vec_avg <- numeric(B)
-oe_vec_tum  <- numeric(B)
-oe_vec_avg  <- numeric(B) 
-
-# Formula for re-fitting
-mod_formula <- csPCa2 ~ age + log2_psa + pirads + log2_vol + dre + priornegbiopsy
-
-for (i in 1:B) {
-  # 2. Stratified random sampling: 50% cases, 50% controls for training
-  train_cases    <- sample(case_indices, size = floor(n_cases / 2), replace = FALSE)
-  train_controls <- sample(control_indices, size = floor(n_controls / 2), replace = FALSE)
+# ------------------------------------------------------------------------------
+# STEP 2: Define Risk Prediction Function for Logistic Regression
+# ------------------------------------------------------------------------------
+risk_cv <- function(test, train) {
+  # Fit logistic regression model on training fold
+  rg <- glm(
+    formula = csPCa2 ~ age + log2_psa + pirads + log2_vol + dre + priornegbiopsy,
+    data    = train,
+    family  = binomial(link = 'logit')
+  )
   
-  train_idx <- c(train_cases, train_controls)
+  # Predict absolute risk (predicted probability) on test fold
+  test$pred_risk_cv <- predict(rg, newdata = test, type = "response")
   
-  # Training and Test sets
-  train_data <- data_comp[train_idx, ]
-  test_data  <- data_comp[-train_idx, ]
-  
-  # 3. Fit new model on training data
-  fit_boot <- glm(mod_formula, data = train_data, family = binomial(link = 'logit'))
-  
-  # 4. Predict probabilities on test data
-  pred_tum <- predict(fit_boot, newdata = test_data, type = "response")
-  actuals  <- test_data$csPCa2
-  
-  # Predict based on SPCC and PCRC-MRI
-  pred_spcc <- test_data$SPCC
-  pred_pcrc <- test_data$`PCRC-MRI`
-  
-  # Calculate average of TUM-RC and SPCC and PCRC-MRI
-  pred_avg <- rowMeans(cbind(pred_tum, pred_spcc, pred_pcrc), na.rm = TRUE)
-  
-  # 5. Evaluate Metrics
-  # AUC TUM
-  roc_obj_tum    <- pROC::roc(actuals, pred_tum, quiet = TRUE)
-  auc_vec_tum[i] <- as.numeric(pROC::auc(roc_obj_tum))
-  # AUC average
-  roc_obj_avg    <- pROC::roc(actuals, pred_avg, quiet = TRUE)
-  auc_vec_avg[i] <- as.numeric(pROC::auc(roc_obj_avg))
-  
-  # Accuracy (Observed / Expected Ratio) 
-  obs_cases <- sum(actuals)
-  # O/E TUM
-  exp_cases_tum <- sum(pred_tum)
-  oe_vec_tum[i]  <- obs_cases / exp_cases_tum
-  # O/E Average
-  exp_cases_avg <- sum(pred_avg)
-  oe_vec_avg[i] <- obs_cases / exp_cases_avg
+  return(test)
 }
 
-# 6. Summarize results with 95% Percentile Confidence Intervals
+# ------------------------------------------------------------------------------
+# STEP 3: Execute Cross-Validation Across 5 Folds
+# ------------------------------------------------------------------------------
+# Clean, vectorized loop over folds 1 through 5
+valid_list <- lapply(1:5, function(k) {
+  test_data  <- data_comp[data_comp$cv_group == k, ]
+  train_data <- data_comp[data_comp$cv_group != k, ]
+  risk_cv(test = test_data, train = train_data)
+})
+
+# Recombine validated subsets into a single dataframe
+valid <- do.call(rbind, valid_list)
+
+# ------------------------------------------------------------------------------
+# Compute Calibration (O/E Ratio) and AUC
+# ------------------------------------------------------------------------------
+
+# Calculate Overall Observed-to-Expected (O/E) Ratio
+c_oe <- sum(valid$csPCa2) / sum(valid$pred_risk_cv)
+
+# Calculate AUC
+roc_obj <- pROC::roc(valid$csPCa2, valid$pred_risk_cv, quiet = TRUE)
+auc_tum <- as.numeric(pROC::auc(roc_obj))
+
+# AUC and O/E per fold
+fold_summary <- valid %>%
+  group_by(cv_group) %>%
+  summarise(
+    Observed = sum(csPCa2),
+    Expected = sum(pred_risk_cv),
+    OE_Ratio = round(sum(csPCa2) / sum(pred_risk_cv), 4),
+    AUC      = round(as.numeric(auc(roc(csPCa2, pred_risk_cv, quiet = TRUE))), 4)
+  )
+
+print(fold_summary)
+apply(fold_summary, 2, mean)
+
+# Internal validation using stratified bootstrap -----
+B <- 500 # Number of bootstrap resamples
+N <- nrow(valid)
+
+boot_auc <- numeric(B)
+boot_c <- numeric(B)
+
+for (b in 1:B) {
+  set.seed(b)
+  # Sample with replacement
+  boot_indices <- sample(1:N, size = N, replace = TRUE)
+  boot_data    <- valid[boot_indices, ]
+  
+  # Performance on bootstrap sample
+  boot_auc[b]  <- as.numeric(auc(roc(boot_data$csPCa2, boot_data$pred_risk_cv, quiet = TRUE)))
+  boot_c[b]    <- sum(boot_data$csPCa2) / sum(boot_data$pred_risk_cv)
+}
+
+# ------------------------------------------------------------------------------
+# STEP 5: Report Calibration Measures 
+# ------------------------------------------------------------------------------
 results <- data.frame(
-  Metric   = c("AUC TUM", "O/E TUM", "AUC Avg", "O/E Avg"),
-  Mean     = c(mean(auc_vec_tum), mean(oe_vec_tum), 
-               mean(auc_vec_avg), mean(oe_vec_avg)),
-  CI_Lower = c(quantile(auc_vec_tum, 0.025), quantile(oe_vec_tum, 0.025), 
-               quantile(auc_vec_avg, 0.025), quantile(oe_vec_avg, 0.025)),
-  CI_Upper = c(quantile(auc_vec_tum, 0.975), quantile(oe_vec_tum, 0.975),
-               quantile(auc_vec_avg, 0.975), quantile(oe_vec_avg, 0.975))
+  Metric   = c("AUC TUM", "O/E TUM"),
+  value    = c(auc_tum, c_oe),
+  CI_Lower = c(quantile(boot_auc, 0.025), quantile(boot_c, 0.025)),
+  CI_Upper = c(quantile(boot_auc, 0.975), quantile(boot_c, 0.975))
 )
 
 library(flextable)
 results |> 
   flextable()|> 
-  colformat_double(digits = 3)
+  colformat_double(digits = 2)
+
+
+# Internal validation using 50:50 bootstrap (not used) -----
+# model1 <- glm(formula = csPCa2 ~ age + log2_psa + pirads + log2_vol + dre + priornegbiopsy,
+#               data = data_comp,
+#               family=binomial(link='logit'))
+# summary(model1)
+# round(exp(model1$coefficients), 2)
+# 
+# set.seed(123) # Set seed for reproducibility
+# B <- 1000     # Number of bootstrap iterations
+# 
+# # 1. Separate case and control indices
+# case_indices    <- which(data_comp$csPCa2 == 1)
+# control_indices <- which(data_comp$csPCa2 == 0)
+# 
+# n_cases    <- length(case_indices)
+# n_controls <- length(control_indices)
+# 
+# # Vectors to store metrics across iterations
+# auc_vec_tum <- numeric(B)
+# auc_vec_avg <- numeric(B)
+# oe_vec_tum  <- numeric(B)
+# oe_vec_avg  <- numeric(B) 
+# 
+# # Formula for re-fitting
+# mod_formula <- csPCa2 ~ age + log2_psa + pirads + log2_vol + dre + priornegbiopsy
+# 
+# for (i in 1:B) {
+#   # 2. Stratified random sampling: 50% cases, 50% controls for training
+#   train_cases    <- sample(case_indices, size = floor(n_cases / 2), replace = FALSE)
+#   train_controls <- sample(control_indices, size = floor(n_controls / 2), replace = FALSE)
+#   
+#   train_idx <- c(train_cases, train_controls)
+#   
+#   # Training and Test sets
+#   train_data <- data_comp[train_idx, ]
+#   test_data  <- data_comp[-train_idx, ]
+#   
+#   # 3. Fit new model on training data
+#   fit_boot <- glm(mod_formula, data = train_data, family = binomial(link = 'logit'))
+#   
+#   # 4. Predict probabilities on test data
+#   pred_tum <- predict(fit_boot, newdata = test_data, type = "response")
+#   actuals  <- test_data$csPCa2
+#   
+#   # Predict based on SPCC and PCRC-MRI
+#   pred_spcc <- test_data$SPCC
+#   pred_pcrc <- test_data$`PCRC-MRI`
+#   
+#   # Calculate average of TUM-RC and SPCC and PCRC-MRI
+#   pred_avg <- rowMeans(cbind(pred_tum, pred_spcc, pred_pcrc), na.rm = TRUE)
+#   
+#   # 5. Evaluate Metrics
+#   # AUC TUM
+#   roc_obj_tum    <- pROC::roc(actuals, pred_tum, quiet = TRUE)
+#   auc_vec_tum[i] <- as.numeric(pROC::auc(roc_obj_tum))
+#   # AUC average
+#   roc_obj_avg    <- pROC::roc(actuals, pred_avg, quiet = TRUE)
+#   auc_vec_avg[i] <- as.numeric(pROC::auc(roc_obj_avg))
+#   
+#   # Accuracy (Observed / Expected Ratio) 
+#   obs_cases <- sum(actuals)
+#   # O/E TUM
+#   exp_cases_tum <- sum(pred_tum)
+#   oe_vec_tum[i]  <- obs_cases / exp_cases_tum
+#   # O/E Average
+#   exp_cases_avg <- sum(pred_avg)
+#   oe_vec_avg[i] <- obs_cases / exp_cases_avg
+# }
+# 
+# # 6. Summarize results with 95% Percentile Confidence Intervals
+# results <- data.frame(
+#   Metric   = c("AUC TUM", "O/E TUM", "AUC Avg", "O/E Avg"),
+#   Mean     = c(mean(auc_vec_tum), mean(oe_vec_tum), 
+#                mean(auc_vec_avg), mean(oe_vec_avg)),
+#   CI_Lower = c(quantile(auc_vec_tum, 0.025), quantile(oe_vec_tum, 0.025), 
+#                quantile(auc_vec_avg, 0.025), quantile(oe_vec_avg, 0.025)),
+#   CI_Upper = c(quantile(auc_vec_tum, 0.975), quantile(oe_vec_tum, 0.975),
+#                quantile(auc_vec_avg, 0.975), quantile(oe_vec_avg, 0.975))
+# )
+# 
+# library(flextable)
+# results |> 
+#   flextable()|> 
+#   colformat_double(digits = 3)
   
